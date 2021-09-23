@@ -1,0 +1,30 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "npm start"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CaribNFTFI/Backend.git"
+  },
+  "author": "AlexRos",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/CaribNFTFI/Backend/issues"
+  },
+  "homepage": "https://github.com/CaribNFTFI/Backend#readme",
+  "dependencies": {
+    "abi-decoder": "^2.4.0",
+    "async": "^3.2.1",
+    "axios": "^0.21.1",
+    "cors": "^2.8.5",
+    "express": "^4.17.1",
+    "express-formidable": "^1.2.0",
+    "mv": "^2.1.1",
+    "mysql2": "^2.3.0",
+    "web3": "^1.5.1"
+  }
+}
