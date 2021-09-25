@@ -15,4 +15,4 @@ app.listen(config.port_number, () => {
     console.log('Server running on port: ' + config.port_number);
 });
 
-//sync_blocks();
+sync_blocks();

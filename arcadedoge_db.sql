@@ -3,9 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- 생성 시간: 21-09-22 09:38
--- 서버 버전: 10.4.11-MariaDB
--- PHP 버전: 7.4.4
+-- Generation Time: Sep 25, 2021 at 06:34 PM
+-- Server version: 10.4.11-MariaDB
+-- PHP Version: 7.4.4
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -18,13 +18,27 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- 데이터베이스: `arcadedoge_db`
+-- Database: `arcadedoge_db`
 --
 
 -- --------------------------------------------------------
 
 --
--- 테이블 구조 `tbl_comment`
+-- Table structure for table `tbl_category`
+--
+
+CREATE TABLE `tbl_category` (
+  `id` int(11) NOT NULL,
+  `game_id` int(11) NOT NULL,
+  `name` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbl_comment`
 --
 
 CREATE TABLE `tbl_comment` (
@@ -39,23 +53,10 @@ CREATE TABLE `tbl_comment` (
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
---
--- 테이블의 덤프 데이터 `tbl_comment`
---
-
-INSERT INTO `tbl_comment` (`id`, `discussion_id`, `parent_id`, `content`, `user`, `user_type`, `likes`, `created_at`, `updated_at`) VALUES
-(1, 2, -1, 'Cottage cheese taleggio mascarpone. Cheesy feet chalk and cheese everyone loves paneer smelly cheese jarlsberg blue castello feta...', '', 1, 22345, '2021-09-21 13:27:02', '2021-09-21 13:27:02'),
-(2, 2, -1, 'Cottage cheese taleggio mascarpone. Cheesy feet chalk and cheese everyone loves paneer smelly cheese jarlsberg blue castello feta...', '', 1, 22345, '2021-09-21 13:27:02', '2021-09-21 13:27:02'),
-(3, 2, 2, 'Cottage cheese taleggio mascarpone. Cheesy feet chalk and cheese everyone loves paneer smelly cheese jarlsberg blue castello feta...', '', 1, 22345, '2021-09-21 13:27:59', '2021-09-21 13:27:59'),
-(4, 2, 2, 'Cottage cheese taleggio mascarpone. Cheesy feet ch...', '', 1, 12, '2021-09-21 13:49:40', '2021-09-21 13:49:40'),
-(5, 2, 2, 'Cottage cheese taleggio mascarpone. Cheesy feet ch...', '', 1, 10, '2021-09-21 13:50:03', '2021-09-21 13:50:03'),
-(6, 2, 3, 'Cottage cheese taleggio mascarpone. Cheesy feet ch...', '', 1, 1, '2021-09-21 13:50:32', '2021-09-21 13:50:32'),
-(7, 2, 3, 'Cottage cheese taleggio mascarpone. Cheesy feet ch...', '', 1, 1, '2021-09-21 13:50:32', '2021-09-21 13:50:32');
-
 -- --------------------------------------------------------
 
 --
--- 테이블 구조 `tbl_discussion`
+-- Table structure for table `tbl_discussion`
 --
 
 CREATE TABLE `tbl_discussion` (
@@ -69,19 +70,88 @@ CREATE TABLE `tbl_discussion` (
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- --------------------------------------------------------
+
 --
--- 테이블의 덤프 데이터 `tbl_discussion`
+-- Table structure for table `tbl_game`
 --
 
-INSERT INTO `tbl_discussion` (`id`, `stuff_id`, `content`, `user`, `user_type`, `likes`, `created_at`, `updated_at`) VALUES
-(1, 2, 'Cottage cheese taleggio mascarpone. Cheesy feet chalk and cheese everyone loves paneer smelly cheese jarlsberg blue castello feta cheese.', '', 1, 12, '2021-09-21 09:59:07', '2021-09-21 09:59:19'),
-(2, 2, 'Cottage cheese taleggio mascarpone. Cheesy feet chalk and cheese everyone loves paneer smelly cheese jarlsberg blue castello feta cheese.', '', 1, 22345, '2021-09-21 10:00:09', '2021-09-21 10:00:09'),
-(3, 2, 'Cottage cheese taleggio mascarpone. Cheesy feet chalk and cheese everyone loves paneer smelly cheese jarlsberg blue castello feta cheese.', '', 1, 12, '2021-09-21 10:00:09', '2021-09-21 10:00:09');
+CREATE TABLE `tbl_game` (
+  `id` int(11) NOT NULL,
+  `name` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- --------------------------------------------------------
 
 --
--- 테이블 구조 `tbl_stuff`
+-- Table structure for table `tbl_history`
+--
+
+CREATE TABLE `tbl_history` (
+  `id` int(11) NOT NULL,
+  `token_id` int(11) NOT NULL,
+  `from_address` varchar(128) COLLATE utf8_unicode_ci NOT NULL,
+  `to_address` varchar(128) COLLATE utf8_unicode_ci NOT NULL,
+  `asset_id` int(11) DEFAULT NULL,
+  `amount` int(11) DEFAULT NULL,
+  `type` int(11) NOT NULL DEFAULT 0 COMMENT '1: mint, 2: exchange, 3: burn, 4: transfer',
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbl_item`
+--
+
+CREATE TABLE `tbl_item` (
+  `id` int(11) NOT NULL,
+  `game_id` int(11) NOT NULL,
+  `category_id` int(11) NOT NULL,
+  `contract_address` varchar(128) COLLATE utf8_unicode_ci NOT NULL,
+  `token_id` int(13) NOT NULL,
+  `name` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `description` text COLLATE utf8_unicode_ci NOT NULL,
+  `attach_url` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `owner` varchar(128) COLLATE utf8_unicode_ci NOT NULL,
+  `is_anonymous` int(11) NOT NULL DEFAULT 0 COMMENT '0: anonymous, 1: none-anonymous',
+  `arcadedoge_price` double NOT NULL DEFAULT 0,
+  `is_visible` int(11) NOT NULL DEFAULT 0 COMMENT '0: hidden, 1: visible',
+  `is_burnt` int(11) NOT NULL DEFAULT 0 COMMENT '0: none-burnt, 1: burnt',
+  `trade_cnt` int(11) NOT NULL DEFAULT 0,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbl_status`
+--
+
+CREATE TABLE `tbl_status` (
+  `id` int(11) NOT NULL,
+  `contract_type` int(11) NOT NULL COMMENT '1: NFT, 2: EXCHANGE',
+  `block_number` int(11) NOT NULL DEFAULT 0,
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+--
+-- Dumping data for table `tbl_status`
+--
+
+INSERT INTO `tbl_status` (`id`, `contract_type`, `block_number`, `created_at`, `updated_at`) VALUES
+(1, 1, 0, '0000-00-00 00:00:00', '0000-00-00 00:00:00'),
+(2, 2, 0, '0000-00-00 00:00:00', '0000-00-00 00:00:00');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbl_stuff`
 --
 
 CREATE TABLE `tbl_stuff` (
@@ -92,56 +162,108 @@ CREATE TABLE `tbl_stuff` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
--- 테이블의 덤프 데이터 `tbl_stuff`
---
-
-INSERT INTO `tbl_stuff` (`id`, `title`, `created_at`, `updated_at`) VALUES
-(1, 'ArcadeDoge General Stuff', '2021-09-21 09:57:25', '2021-09-21 09:57:50'),
-(2, 'MarsDoge', '2021-09-21 09:57:25', '2021-09-21 09:57:25');
-
---
--- 덤프된 테이블의 인덱스
+-- Indexes for dumped tables
 --
 
 --
--- 테이블의 인덱스 `tbl_comment`
+-- Indexes for table `tbl_category`
+--
+ALTER TABLE `tbl_category`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `tbl_comment`
 --
 ALTER TABLE `tbl_comment`
   ADD PRIMARY KEY (`id`);
 
 --
--- 테이블의 인덱스 `tbl_discussion`
+-- Indexes for table `tbl_discussion`
 --
 ALTER TABLE `tbl_discussion`
   ADD PRIMARY KEY (`id`);
 
 --
--- 테이블의 인덱스 `tbl_stuff`
+-- Indexes for table `tbl_game`
+--
+ALTER TABLE `tbl_game`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `tbl_history`
+--
+ALTER TABLE `tbl_history`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `tbl_item`
+--
+ALTER TABLE `tbl_item`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `tbl_status`
+--
+ALTER TABLE `tbl_status`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `tbl_stuff`
 --
 ALTER TABLE `tbl_stuff`
   ADD PRIMARY KEY (`id`);
 
 --
--- 덤프된 테이블의 AUTO_INCREMENT
+-- AUTO_INCREMENT for dumped tables
 --
 
 --
--- 테이블의 AUTO_INCREMENT `tbl_comment`
+-- AUTO_INCREMENT for table `tbl_category`
+--
+ALTER TABLE `tbl_category`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `tbl_comment`
 --
 ALTER TABLE `tbl_comment`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
--- 테이블의 AUTO_INCREMENT `tbl_discussion`
+-- AUTO_INCREMENT for table `tbl_discussion`
 --
 ALTER TABLE `tbl_discussion`
-  MODIFY `id` int(255) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(255) NOT NULL AUTO_INCREMENT;
 
 --
--- 테이블의 AUTO_INCREMENT `tbl_stuff`
+-- AUTO_INCREMENT for table `tbl_game`
+--
+ALTER TABLE `tbl_game`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `tbl_history`
+--
+ALTER TABLE `tbl_history`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `tbl_item`
+--
+ALTER TABLE `tbl_item`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `tbl_status`
+--
+ALTER TABLE `tbl_status`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT for table `tbl_stuff`
 --
 ALTER TABLE `tbl_stuff`
-  MODIFY `id` int(255) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(255) NOT NULL AUTO_INCREMENT;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

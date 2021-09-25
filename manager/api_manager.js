@@ -1,7 +1,8 @@
 const config = require("../common/config");
 var database_manager = require("./database_manager");
 const mv = require('mv');
-const { database } = require("../common/database");
+var Unrar = require('unrar');
+const makeDir = require('make-dir');
 
 function register_apis(app) {
     app.post ("/stuff/all", async(req, res) => {
@@ -97,11 +98,7 @@ function register_apis(app) {
             user_type: user_type,
             user: user
         })) {
-            var ret = {
-                result: false,
-                msg: 'validation failed!'
-            };
-            response(ret, res);
+            response_invalid();
             return;
         }
 
@@ -127,11 +124,7 @@ function register_apis(app) {
             user_type: user_type,
             user: user
         })) {
-            var ret = {
-                result: false,
-                msg: 'validation failed!'
-            };
-            response(ret, res);
+            response_invalid();
             return;
         }
 
@@ -159,11 +152,7 @@ function register_apis(app) {
             user_type: user_type,
             user: user
         })) {
-            var ret = {
-                result: false,
-                msg: 'validation failed!'
-            };
-            response(ret, res);
+            response_invalid();
             return;
         }
 
@@ -176,6 +165,112 @@ function register_apis(app) {
 
         response (ret, res);
     });
+
+    app.post("/get_games", async(req, res) => {
+        var result = await database_manager.get_games();
+
+        var ret = {
+            result: true,
+            data: result
+        };
+
+        response (ret, res);
+    });
+
+    app.post("/get_categories", async(req, res) => {
+        var result = await database_manager.get_categories();
+
+        var ret = {
+            result: true,
+            data: result
+        };
+
+        response (ret, res);
+    });
+
+    app.post("/get_items_by_address", async(req, res) => {
+        var address = req.fields.address;
+        var sort_type = req.fields.sort;
+        var limit = req.fields.limit;
+        var cnt = req.fields.cnt;
+        
+        if (address == null || address == '' || sort_type == null || limit == null || cnt == null) {
+            response_invalid();
+            return;
+        }
+        
+        var result = await database_manager.get_items_by_address(address, sort_type, limit, cnt);
+
+        var ret = {
+            result: true,
+            data: result
+        };
+
+        response (ret, res);
+    });
+
+    app.post("/get_market_items", async(req, res) => {
+        var sort_type = req.fields.sort;
+        var limit = req.fields.limit;
+        var cnt = req.fields.cnt;
+        
+        if (sort_type == null || limit == null || cnt == null) {
+            response_invalid();
+            return;
+        }
+        
+        var result = await database_manager.get_market_items(sort_type, limit, cnt);
+
+        var ret = {
+            result: true,
+            data: result
+        };
+
+        response (ret, res);
+    });
+
+    app.post('/upload_material', async (req, res, next) => {
+        var form = new formidable.IncomingForm();
+        form.parse(req, (err, fields, files) => {
+            if (files.myFile.name.slice(files.myFile.name.length - 4, files.myFile.name.length) != '.rar') {
+                response({result: false}, res);
+                return;
+            }
+
+            var oldpath = files.myFile.path;
+            var newpath = config.material_path + files.myFile.name;
+            mv(oldpath, newpath, async function (err) {
+                if (err) {
+                    console.log(err);
+                    response({result: false}, res);
+                    return;
+                }
+
+                var archive = new Unrar(newpath);
+
+                archive.list(function(err, entries) {
+                    var exist_thumbnail = false;
+                    for (var i = 0; i < entries.length; i++) {
+                        var name = entries[i].name;
+                        var type = entries[i].type
+                        if (type == 'File' && name == 'thumbnail.png') {
+                            exist_thumbnail = true;
+
+                            var stream = archive.stream('thumbnail.png'); // name of entry
+                            stream.on('error', () => { response({result: false})});
+                            stream.pipe(fs.createWriteStream(config.thumbnail_path + files.myFile.name.slice(0, files.myFile.name.length - 4) + ".png"));
+
+                            response({result: true});
+                            return;
+                        }
+                    }
+
+                    response({result: false}, res);
+                    return;
+                });
+            });
+        });
+    });
 }
 
 function response(ret, res) {
@@ -183,6 +278,14 @@ function response(ret, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.status(200);
     res.json(ret);
+}
+
+function response_invalid(ret, res) {
+    var ret = {
+        result: false,
+        msg: 'validation failed!'
+    };
+    response(ret, res);
 }
 
 function isValidDiscussionParams(params) {
