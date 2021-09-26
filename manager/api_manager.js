@@ -112,32 +112,6 @@ function register_apis(app) {
         response (ret, res);
     });
 
-    app.post("/discussion/new", async(req, res) => {
-        var stuff_id = req.fields.stuff_id;
-        var content = req.fields.content;
-        var user_type = req.fields.user_type;
-        var user = req.fields.user;
-
-        if (!isValidDiscussionParams({
-            stuff_id: stuff_id,
-            content: content,
-            user_type: user_type,
-            user: user
-        })) {
-            response_invalid();
-            return;
-        }
-
-        var result = await database_manager.add_discussion(stuff_id, content, user_type, user);
-
-        var ret = {
-            result: true,
-            data: result
-        };
-
-        response (ret, res);
-    });
-
     app.post("/comment/new", async(req, res) => {
         var discussion_id = req.fields.discussion_id;
         var parent_id = req.fields.parent_id;
