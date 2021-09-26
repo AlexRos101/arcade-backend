@@ -3,6 +3,7 @@ var database_manager = require("./database_manager");
 const mv = require('mv');
 var Unrar = require('unrar');
 const makeDir = require('make-dir');
+var formidable = require('formidable');
 
 function register_apis(app) {
     app.post ("/stuff/all", async(req, res) => {
@@ -184,16 +185,18 @@ function register_apis(app) {
     });
 
     app.post("/get_market_items", async(req, res) => {
+        var game = req.fields.game;
+        var category = req.fields.category;
         var sort_type = req.fields.sort;
         var limit = req.fields.limit;
         var cnt = req.fields.cnt;
         
-        if (sort_type == null || limit == null || cnt == null) {
+        if (game == null || category == null || sort_type == null || limit == null || cnt == null) {
             response_invalid();
             return;
         }
         
-        var result = await database_manager.get_market_items(sort_type, limit, cnt);
+        var result = await database_manager.get_market_items(game, category, sort_type, limit, cnt);
 
         var ret = {
             result: true,
@@ -204,44 +207,47 @@ function register_apis(app) {
     });
 
     app.post('/upload_material', async (req, res, next) => {
-        var form = new formidable.IncomingForm();
-        form.parse(req, (err, fields, files) => {
-            if (files.myFile.name.slice(files.myFile.name.length - 4, files.myFile.name.length) != '.rar') {
+        let files = req.files;
+        if (files.myFile == null) {
+            response({result: false}, res);
+            return;
+        }
+
+        if (files.myFile.name.slice(files.myFile.name.length - 4, files.myFile.name.length) != '.rar') {
+            response({result: false}, res);
+            return;
+        }
+
+        var oldpath = files.myFile.path;
+        var newpath = config.material_path + files.myFile.name;
+        mv(oldpath, newpath, async function (err) {
+            if (err) {
+                console.log(err);
                 response({result: false}, res);
                 return;
             }
 
-            var oldpath = files.myFile.path;
-            var newpath = config.material_path + files.myFile.name;
-            mv(oldpath, newpath, async function (err) {
-                if (err) {
-                    console.log(err);
-                    response({result: false}, res);
-                    return;
+            var archive = new Unrar(newpath);
+
+            archive.list(function(err, entries) {
+                var exist_thumbnail = false;
+                for (var i = 0; i < entries.length; i++) {
+                    var name = entries[i].name;
+                    var type = entries[i].type
+                    if (type == 'File' && name == 'thumbnail.png') {
+                        exist_thumbnail = true;
+
+                        var stream = archive.stream('thumbnail.png'); // name of entry
+                        stream.on('error', () => { response({result: false})});
+                        stream.pipe(require('fs').createWriteStream(config.thumbnail_path + files.myFile.name.slice(0, files.myFile.name.length - 4) + ".png"));
+
+                        response({result: true}, res);
+                        return;
+                    }
                 }
 
-                var archive = new Unrar(newpath);
-
-                archive.list(function(err, entries) {
-                    var exist_thumbnail = false;
-                    for (var i = 0; i < entries.length; i++) {
-                        var name = entries[i].name;
-                        var type = entries[i].type
-                        if (type == 'File' && name == 'thumbnail.png') {
-                            exist_thumbnail = true;
-
-                            var stream = archive.stream('thumbnail.png'); // name of entry
-                            stream.on('error', () => { response({result: false})});
-                            stream.pipe(fs.createWriteStream(config.thumbnail_path + files.myFile.name.slice(0, files.myFile.name.length - 4) + ".png"));
-
-                            response({result: true});
-                            return;
-                        }
-                    }
-
-                    response({result: false}, res);
-                    return;
-                });
+                response({result: false, code: -1, msg: 'Not exist thumbnail file.'}, res);
+                return;
             });
         });
     });
