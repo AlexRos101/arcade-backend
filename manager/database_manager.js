@@ -139,7 +139,7 @@ async function add_token(connection, item) {
 
     try {
         var query = "INSERT INTO tbl_item (game_id, category_id, contract_address, token_id, name, description, attach_url, owner, is_anonymous, arcadedoge_price) VALUE(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        var [rows, fields] = await connection.execute(query, [item.game_id, item.category_id, item.contract_address, item.token_id, item.description, item.attach_url, item.owner, item.is_anonymous, item.arcadedoge_price]);
+        var [rows, fields] = await connection.execute(query, [item.game_id, item.category_id, item.contract_address, item.token_id, item.name, item.description, item.attach_url, item.owner, item.is_anonymous, item.arcadedoge_price]);
         ret = rows.insertId;
     } catch (err) {
         console.log(err);
@@ -508,10 +508,26 @@ async function get_items_by_address(address, sort_type, limit, cnt) {
     return rows;
 }
 
-async function get_market_items(sort_type, limit, cnt) {
+async function get_market_items(game, category, sort_type, limit, cnt) {
     var connection = await connect();
-    var query = "SELECT * from tbl_item WHERE owenr = ? AND is_visible = ? " + get_order_by_clause(sort_type) + " LIMIT ?, ?";
-    let [rows, fields] = await connection.execute(query, [CONST.VISIBILITY_STATUS.SHOW, limit, cnt]);
+
+    var query = "SELECT * from tbl_ time WHERE is_visible = ?";
+    var params = [CONST.VISIBILITY_STATUS.SHOW];
+
+    if (game != 0) {
+        query += " AND game_id = ?";
+        params.push(game);
+    }
+
+    if (category != 0) {
+        query += " AND category_id = ?";
+        params.push(category);
+    }
+
+    query += " " + get_order_by_clause(sort_type) + " LIMIT ?, ?";
+    params.push(limit);
+    params.push(cnt);
+    let [rows, fields] = await connection.execute(query, params);
     return rows;
 }
 

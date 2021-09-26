@@ -64,7 +64,8 @@ async function sync_nft_blocks() {
                         description: token_info.description,
                         attach_url: decodedData.params[1].value,
                         owner: transaction.from,
-                        arcadedoge_price: token_info.arcadedoge_price
+                        arcadedoge_price: token_info.arcadedoge_price,
+                        is_anonymous: token_info.is_anonymous == null? CONST.ANONYMOUS_TYPE.NONE: token_info.is_anonymous
                     }
     
                     if (!await database_manager.mint_token(token, transaction.blockNumber)) {
