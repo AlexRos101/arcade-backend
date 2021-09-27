@@ -23,6 +23,24 @@ function register_apis(app) {
         response(ret, res);
     });
 
+    app.post ("/stuff/search", async(req, res) => {
+        var keyword = req.fields.keyword;
+        var stuffs = await database_manager.get_stuff(null);
+        
+        for(var i = 0; i < stuffs.length; i ++) {
+            var stuff = stuffs[i];
+            var discussions = await database_manager.get_discussion_by_keyword(stuff.id, 0, 3,keyword);
+            stuffs[i].discussions = discussions;
+        }
+
+        var ret = {
+            result: true,
+            data: stuffs
+        };
+
+        response(ret, res);
+    });
+
     app.post("/stuff", async(req, res) => {
         var id = req.fields.id;
 
@@ -73,7 +91,7 @@ function register_apis(app) {
                         break;
                     }
                 }
-                comments.pop();
+                comments.splice(i, 1);
             }
 
             discussion.comments = comments;

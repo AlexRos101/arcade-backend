@@ -62,6 +62,15 @@ async function get_discussion(stuff_id, limit, cnt) {
     return rows;
 }
 
+async function get_discussion_by_keyword(stuff_id, limit, cnt, keyword) {
+    var connection = await connect();
+    var query = "SELECT * from tbl_discussion WHERE tbl_discussion.content LIKE ? AND tbl_discussion.stuff_id LIKE ? ORDER BY tbl_discussion.likes DESC LIMIT ?, ?";
+    var [rows, fields] = await connection.execute(query, ['%' + keyword + '%', stuff_id, limit, cnt]);
+
+    connection.end();
+    return rows;
+}
+
 async function get_discussion_by_id(id) {
     var connection = await connect();
 
@@ -565,5 +574,6 @@ module.exports = {
     get_games,
     get_categories,
     get_items_by_address,
-    get_market_items
+    get_market_items,
+    get_discussion_by_keyword
 }

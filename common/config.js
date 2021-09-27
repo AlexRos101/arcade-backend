@@ -4,9 +4,9 @@ var config = {
     contract_exchange: '0x871B8cD034E7017A1fBc84f11B71D63D30F4566A',
     contract_nft: '0xC4C1a600aCD436e363790e572E28306512C59ed7',
     
-    material_path: "D:\\xampp\\htdocs\\arcadedoge\\materials\\",
-    thumbnail_path: "D:\\xampp\\htdocs\\arcadedoge\\thumbnails\\",
-    temp_path: "D:\\xampp\\htdocs\\arcadedoge\\temp\\",
+    material_path: "C:\\xampp\\htdocs\\arcadedoge\\materials\\",
+    thumbnail_path: "C:\\xampp\\htdocs\\arcadedoge\\thumbnails\\",
+    temp_path: "C:\\xampp\\htdocs\\arcadedoge\\temp\\",
 
     service_delay: 5000,
 
