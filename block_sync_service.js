@@ -65,7 +65,7 @@ async function sync_nft_blocks() {
                         attach_url: decodedData.params[1].value,
                         owner: transaction.from,
                         arcadedoge_price: token_info.arcadedoge_price,
-                        is_anonymous: token_info.is_anonymous == null? CONST.ANONYMOUS_TYPE.NONE: token_info.is_anonymous
+                        is_anonymous: token_info.is_anonymous
                     }
     
                     if (!await database_manager.mint_token(token, transaction.blockNumber)) {
@@ -90,7 +90,9 @@ async function sync_nft_blocks() {
                     }
                     break;
                 default:
-                    result = true;
+                    if (!await database_manager.update_other_sync_block_number(CONST.CONTRACT_TYPE.NFT, transaction.blockNumber)) {
+                        result = false;
+                    }
                     break;
             }
     
@@ -132,14 +134,14 @@ async function sync_exchange_blocks() {
     
             if (decodedData == null) continue;
     
-            var result = false;
+            var result = true;
     
             switch(decodedData.name) {
                 case CONST.EXCHANGE_FUNCTION_NAME.SELL_REQUEST:
                     if (!(await database_manager.sell_token(
                         decodedData.params[0].value, 
                         decodedData.params[1].value, 
-                        Web3.util.fromWei(decodedData.params[2].value + '', 'ether'), 
+                        Web3.utils.fromWei(decodedData.params[2].value + '', 'ether'), 
                         transaction.blockNumber))
                     ) {
                         result = false;
@@ -161,7 +163,7 @@ async function sync_exchange_blocks() {
                         decodedData.params[1].value, 
                         Web3.utils.toChecksumAddress(decodedData.params[2].value), 
                         config.contract_arcadedoge, 
-                        Web3.util.fromWei(decodedData.params[3].value + '', 'ether'),
+                        Web3.utils.fromWei(decodedData.params[3].value + '', 'ether'),
                         Web3.utils.toChecksumAddress(decodedData.params[4].value)))
                     ) {
                         result = false;
@@ -173,14 +175,16 @@ async function sync_exchange_blocks() {
                         decodedData.params[1].value, 
                         Web3.utils.toChecksumAddress(decodedData.params[2].value), 
                         config.contract_busd, 
-                        Web3.util.fromWei(decodedData.params[3].value + '', 'ether'),
+                        Web3.utils.fromWei(decodedData.params[3].value + '', 'ether'),
                         Web3.utils.toChecksumAddress(decodedData.params[4].value)))
                     ) {
                         result = false;
                     }
                     break;
                 default:
-                    result = true;
+                    if (!await database_manager.update_other_sync_block_number(CONST.CONTRACT_TYPE.EXCHANGE, transaction.blockNumber)) {
+                        result = false;
+                    }
                     break;
             }
     

@@ -4,6 +4,7 @@ const mv = require('mv');
 var Unrar = require('unrar');
 const makeDir = require('make-dir');
 var formidable = require('formidable');
+const { isNull } = require("util");
 
 function register_apis(app) {
     app.post ("/stuff/all", async(req, res) => {
@@ -226,6 +227,24 @@ function register_apis(app) {
 
         var ret = {
             result: true,
+            data: result
+        };
+
+        response (ret, res);
+    });
+
+    app.post("/get_item_by_id", async(req, res) => {
+        var id = req.fields.id;
+        
+        if (id == null) {
+            response_invalid();
+            return;
+        }
+        
+        var result = await database_manager.get_token_by_id(id);
+
+        var ret = {
+            result: result != null,
             data: result
         };
 

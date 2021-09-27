@@ -335,7 +335,7 @@ async function sell_token(contract_address, token_id, arcadedoge_price, block_nu
         var token = await get_token_by_contract_info(contract_address, token_id);
         if (token == null) throw new Error('Not exist token.');
 
-        if (!(await update_token_visible(connection, id, CONST.VISIBILITY_STATUS.SHOW, arcadedoge_price))) throw new Error('Setting visible failed.');
+        if (!(await update_token_visible(connection, token.id, CONST.VISIBILITY_STATUS.SHOW, arcadedoge_price))) throw new Error('Setting visible failed.');
 
         if (!(await update_sync_block_number(connection, CONST.CONTRACT_TYPE.EXCHANGE, block_number))) throw new Error('Updating sync block failed.');
 
@@ -360,7 +360,7 @@ async function cancel_sell_token(contract_address, token_id, block_number) {
         var token = await get_token_by_contract_info(contract_address, token_id);
         if (token == null) throw new Error('Not exist token.');
 
-        if (!(await update_token_visible(connection, id, CONST.VISIBILITY_STATUS.HIDDEN))) throw new Error('Setting visible failed.');
+        if (!(await update_token_visible(connection, token.id, CONST.VISIBILITY_STATUS.HIDDEN))) throw new Error('Setting visible failed.');
 
         if (!(await update_sync_block_number(connection, CONST.CONTRACT_TYPE.EXCHANGE, block_number))) throw new Error('Updating sync block failed.');
 
@@ -485,6 +485,25 @@ async function transfer_token(contract_address, token_id, from, to, block_number
     return ret;
 }
 
+async function update_other_sync_block_number(contract_type, block_number) {
+    var connection = await connect();
+    var ret = false;
+
+    try {
+        await start_transaction(connection);
+
+        ret = await update_sync_block_number(connection, contract_type, block_number);
+
+        await commit_transaction(connection);
+    } catch (err) {
+        console.log(err);
+        await rollback_transaction(connection);
+    }
+
+    connection.end();
+    return ret;
+}
+
 async function get_games() {
     var connection = await connect();
     var query = "SELECT * FROM tbl_game";
@@ -503,7 +522,7 @@ async function get_categories() {
 
 async function get_items_by_address(address, sort_type, limit, cnt) {
     var connection = await connect();
-    var query = "SELECT * from tbl_item WHERE owner = ? " + get_order_by_clause(sort_type) + " LIMIT ?, ?";
+    var query = "SELECT tbl_item.*, tbl_category.name as category_name from tbl_item LEFT JOIN tbl_category ON tbl_item.category_id = tbl_category.id WHERE is_burnt = 0 AND owner = ? " + get_order_by_clause(sort_type) + " LIMIT ?, ?";
     let [rows, fields] = await connection.execute(query, [address, limit, cnt]);
     return rows;
 }
@@ -511,11 +530,11 @@ async function get_items_by_address(address, sort_type, limit, cnt) {
 async function get_market_items(game, category, sort_type, limit, cnt) {
     var connection = await connect();
 
-    var query = "SELECT * from tbl_ time WHERE is_visible = ?";
+    var query = "SELECT tbl_item.*, tbl_category.name as category_name from tbl_item LEFT JOIN tbl_category ON tbl_item.category_id = tbl_category.id WHERE is_visible = ? AND is_burnt = 0";
     var params = [CONST.VISIBILITY_STATUS.SHOW];
 
     if (game != 0) {
-        query += " AND game_id = ?";
+        query += " AND tbl_item.game_id = ?";
         params.push(game);
     }
 
@@ -530,6 +549,8 @@ async function get_market_items(game, category, sort_type, limit, cnt) {
     let [rows, fields] = await connection.execute(query, params);
     return rows;
 }
+
+
 
 function get_order_by_clause(sort_type) {
     switch(sort_type) {
@@ -565,5 +586,6 @@ module.exports = {
     get_games,
     get_categories,
     get_items_by_address,
-    get_market_items
+    get_market_items,
+    update_other_sync_block_number
 }
