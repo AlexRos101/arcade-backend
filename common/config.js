@@ -1,8 +1,8 @@
 var config = {
     port_number: 4000,
 
-    contract_exchange: '0x871B8cD034E7017A1fBc84f11B71D63D30F4566A',
-    contract_nft: '0xC4C1a600aCD436e363790e572E28306512C59ed7',
+    contract_exchange: '0x251b651c13B9a561856Ae70910Dc507B02519138',
+    contract_nft: '0x2BE5E405dD3a74e293eBa1cbbc9a8577fd2257B6',
     
     material_path: "C:\\xampp\\htdocs\\arcadedoge\\materials\\",
     thumbnail_path: "C:\\xampp\\htdocs\\arcadedoge\\thumbnails\\",
