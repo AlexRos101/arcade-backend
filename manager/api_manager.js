@@ -24,6 +24,24 @@ function register_apis(app) {
         response(ret, res);
     });
 
+    app.post ("/stuff/search", async(req, res) => {
+        var keyword = req.fields.keyword;
+        var stuffs = await database_manager.get_stuff(null);
+        
+        for(var i = 0; i < stuffs.length; i ++) {
+            var stuff = stuffs[i];
+            var discussions = await database_manager.get_discussion_by_keyword(stuff.id, 0, 3,keyword);
+            stuffs[i].discussions = discussions;
+        }
+
+        var ret = {
+            result: true,
+            data: stuffs
+        };
+
+        response(ret, res);
+    });
+
     app.post("/stuff", async(req, res) => {
         var id = req.fields.id;
 
@@ -74,7 +92,7 @@ function register_apis(app) {
                         break;
                     }
                 }
-                comments.pop();
+                comments.splice(i, 1);
             }
 
             discussion.comments = comments;
@@ -83,32 +101,6 @@ function register_apis(app) {
         var ret = {
             result: true,
             data: discussion
-        };
-
-        response (ret, res);
-    });
-
-    app.post("/discussion/new", async(req, res) => {
-        var stuff_id = req.fields.stuff_id;
-        var content = req.fields.content;
-        var user_type = req.fields.user_type;
-        var user = req.fields.user;
-
-        if (!isValidDiscussionParams({
-            stuff_id: stuff_id,
-            content: content,
-            user_type: user_type,
-            user: user
-        })) {
-            response_invalid();
-            return;
-        }
-
-        var result = await database_manager.add_discussion(stuff_id, content, user_type, user);
-
-        var ret = {
-            result: true,
-            data: result
         };
 
         response (ret, res);
@@ -252,6 +244,49 @@ function register_apis(app) {
 
         response (ret, res);
     });
+
+    app.post("/update_item_by_id", async(req, res) => {
+        var id = req.fields.id;
+        var game_id = req.fields.game_id;
+        var category_id = req.fields.category_id;
+        var name = req.fields.name;
+        var is_anonymous = req.fields.is_anonymous;
+        var description = req.fields.description;
+        var price = req.fields.price;
+        
+        if (id == null) {
+            response_invalid();
+            return;
+        }
+        
+        var result = await database_manager.update_token_by_id(id, game_id, category_id, name, description, is_anonymous, price);
+
+        var ret = {
+            result: result != null,
+            data: result
+        };
+
+        response (ret, res);
+    });
+
+    app.post("/get_item_by_tokenid", async(req, res) => {
+        var id = req.fields.token_id;
+        
+        if (id == null) {
+            response_invalid();
+            return;
+        }
+        
+        var result = await database_manager.get_token_by_tokenid(id);
+
+        var ret = {
+            result: result != null,
+            data: result
+        };
+
+        response (ret, res);
+    });
+
 
     app.post('/upload_material', async (req, res, next) => {
         let files = req.files;

@@ -62,6 +62,15 @@ async function get_discussion(stuff_id, limit, cnt) {
     return rows;
 }
 
+async function get_discussion_by_keyword(stuff_id, limit, cnt, keyword) {
+    var connection = await connect();
+    var query = "SELECT * from tbl_discussion WHERE tbl_discussion.content LIKE ? AND tbl_discussion.stuff_id LIKE ? ORDER BY tbl_discussion.likes DESC LIMIT ?, ?";
+    var [rows, fields] = await connection.execute(query, ['%' + keyword + '%', stuff_id, limit, cnt]);
+
+    connection.end();
+    return rows;
+}
+
 async function get_discussion_by_id(id) {
     var connection = await connect();
 
@@ -225,6 +234,38 @@ async function get_token_by_id(id) {
     try {
         var query = "SELECT * from tbl_item WHERE id = ?";
         let [rows, fields] = await connection.execute(query, [id]);
+        if (rows.length > 0) ret = rows[0];
+    } catch (err) {
+        console.log(err);
+    }
+
+    connection.end();
+    return ret;
+}
+
+async function update_token_by_id(id, game_id, category_id, name, description, is_anonymous, price) {
+    var connection = await connect();
+    var ret = null;
+
+    try {
+        var query = "UPDATE tbl_item SET game_id=?, category_id=?, name=?, description=?, is_anonymous=?, arcadedoge_price=? WHERE tbl_item.id LIKE ?";
+        let [rows, fields] = await connection.execute(query, [game_id, category_id, name, description, is_anonymous, price, id]);
+        ret = (rows.affectedRows > 0)
+    } catch (err) {
+        console.log(err);
+    }
+
+    connection.end();
+    return ret;
+}
+
+async function get_token_by_tokenid(token_id) {
+    var connection = await connect();
+    var ret = null;
+
+    try {
+        var query = "SELECT * from tbl_item WHERE token_id = ?";
+        let [rows, fields] = await connection.execute(query, [token_id]);
         if (rows.length > 0) ret = rows[0];
     } catch (err) {
         console.log(err);
@@ -587,6 +628,8 @@ module.exports = {
     mint_token,
     get_sync_block_number,
     get_token_by_id,
+    update_token_by_id,
+    get_token_by_tokenid,
     get_token_by_contract_info,
     bunr_token,
     sell_token,
@@ -598,5 +641,6 @@ module.exports = {
     get_items_by_address,
     get_items_by_address_cnt,
     get_market_items,
-    update_other_sync_block_number
+    update_other_sync_block_number,
+	get_discussion_by_keyword
 }
