@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Sep 25, 2021 at 06:34 PM
+-- Generation Time: Sep 27, 2021 at 03:20 PM
 -- Server version: 10.4.11-MariaDB
 -- PHP Version: 7.4.4
 
@@ -34,6 +34,17 @@ CREATE TABLE `tbl_category` (
   `created_at` datetime NOT NULL DEFAULT current_timestamp(),
   `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+--
+-- Dumping data for table `tbl_category`
+--
+
+INSERT INTO `tbl_category` (`id`, `game_id`, `name`, `created_at`, `updated_at`) VALUES
+(1, 1, 'MarsDoge Skins', '2021-09-26 14:58:19', '2021-09-26 14:58:19'),
+(2, 1, 'MarsDoge Maps', '2021-09-26 14:58:19', '2021-09-26 14:58:19'),
+(3, 1, 'Weapons', '2021-09-26 14:58:36', '2021-09-26 14:58:36'),
+(4, 2, 'Category 1', '2021-09-26 15:46:34', '2021-09-26 15:46:34'),
+(5, 2, 'Category 2', '2021-09-26 15:46:34', '2021-09-26 15:46:34');
 
 -- --------------------------------------------------------
 
@@ -83,6 +94,14 @@ CREATE TABLE `tbl_game` (
   `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
+--
+-- Dumping data for table `tbl_game`
+--
+
+INSERT INTO `tbl_game` (`id`, `name`, `created_at`, `updated_at`) VALUES
+(1, 'MarsDoge', '2021-09-26 14:57:30', '2021-09-26 14:57:30'),
+(2, 'Another Game', '2021-09-26 15:46:14', '2021-09-26 15:46:14');
+
 -- --------------------------------------------------------
 
 --
@@ -129,6 +148,21 @@ CREATE TABLE `tbl_item` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `tbl_likes`
+--
+
+CREATE TABLE `tbl_likes` (
+  `id` int(11) NOT NULL,
+  `discussion_id` int(255) NOT NULL,
+  `parent_id` int(255) NOT NULL,
+  `user` varchar(255) NOT NULL,
+  `user_type` int(11) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `tbl_status`
 --
 
@@ -136,8 +170,8 @@ CREATE TABLE `tbl_status` (
   `id` int(11) NOT NULL,
   `contract_type` int(11) NOT NULL COMMENT '1: NFT, 2: EXCHANGE',
   `block_number` int(11) NOT NULL DEFAULT 0,
-  `created_at` datetime NOT NULL,
-  `updated_at` datetime NOT NULL
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 --
@@ -145,8 +179,8 @@ CREATE TABLE `tbl_status` (
 --
 
 INSERT INTO `tbl_status` (`id`, `contract_type`, `block_number`, `created_at`, `updated_at`) VALUES
-(1, 1, 0, '0000-00-00 00:00:00', '0000-00-00 00:00:00'),
-(2, 2, 0, '0000-00-00 00:00:00', '0000-00-00 00:00:00');
+(1, 1, 12730546, '0000-00-00 00:00:00', '2021-09-27 20:30:34'),
+(2, 2, 12730554, '0000-00-00 00:00:00', '2021-09-27 20:31:01');
 
 -- --------------------------------------------------------
 
@@ -202,6 +236,12 @@ ALTER TABLE `tbl_item`
   ADD PRIMARY KEY (`id`);
 
 --
+-- Indexes for table `tbl_likes`
+--
+ALTER TABLE `tbl_likes`
+  ADD PRIMARY KEY (`id`);
+
+--
 -- Indexes for table `tbl_status`
 --
 ALTER TABLE `tbl_status`
@@ -221,7 +261,7 @@ ALTER TABLE `tbl_stuff`
 -- AUTO_INCREMENT for table `tbl_category`
 --
 ALTER TABLE `tbl_category`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `tbl_comment`
@@ -239,7 +279,7 @@ ALTER TABLE `tbl_discussion`
 -- AUTO_INCREMENT for table `tbl_game`
 --
 ALTER TABLE `tbl_game`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `tbl_history`
@@ -251,6 +291,12 @@ ALTER TABLE `tbl_history`
 -- AUTO_INCREMENT for table `tbl_item`
 --
 ALTER TABLE `tbl_item`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `tbl_likes`
+--
+ALTER TABLE `tbl_likes`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
