@@ -150,8 +150,7 @@ async function sync_exchange_blocks() {
                 case CONST.EXCHANGE_FUNCTION_NAME.CANCEL_SELL_REQUEST:
                     if (!(await database_manager.cancel_sell_token(
                         decodedData.params[0].value, 
-                        decodedData.params[1].value, 
-                        0, 
+                        decodedData.params[1].value,
                         transaction.blockNumber))
                     ) {
                         result = false;
