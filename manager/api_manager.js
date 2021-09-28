@@ -218,10 +218,11 @@ function register_apis(app) {
         }
         
         var result = await database_manager.get_market_items(game, category, sort_type, limit, cnt);
-
+        var total = await database_manager.get_market_items_cnt(game, category);
         var ret = {
             result: true,
-            data: result
+            data: result,
+            total: total
         };
 
         response (ret, res);

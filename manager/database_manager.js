@@ -602,6 +602,27 @@ async function get_market_items(game, category, sort_type, limit, cnt) {
     return rows;
 }
 
+async function get_market_items_cnt(game, category) {
+    var connection = await connect();
+
+    var query = "SELECT COUNT(id) as total from tbl_item WHERE is_visible = ? AND is_burnt = 0";
+    var params = [CONST.VISIBILITY_STATUS.SHOW];
+
+    if (game != 0) {
+        query += " AND tbl_item.game_id = ?";
+        params.push(game);
+    }
+
+    if (category != 0) {
+        query += " AND category_id = ?";
+        params.push(category);
+    }
+
+    let [rows, fields] = await connection.execute(query, params);
+    connection.end();
+    return rows[0].total;
+}
+
 
 
 function get_order_by_clause(sort_type) {
@@ -641,6 +662,7 @@ module.exports = {
     get_items_by_address,
     get_items_by_address_cnt,
     get_market_items,
+    get_market_items_cnt,
     update_other_sync_block_number,
 	get_discussion_by_keyword
 }
