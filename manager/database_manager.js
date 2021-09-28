@@ -29,13 +29,13 @@ async function get_stuff(stuff_id) {
 
     if (stuff_id == null || stuff_id == '') {
         var query = "SELECT * from tbl_stuff";
-        [rows, fields] = await connection.execute(query);
+        [rows, fields] = await mysql_execute(connection, query);
 
         connection.end();
         return rows;
     } else  {
         var query = "SELECT * from tbl_stuff WHERE id LIKE ?";
-        [rows, fields] = await connection.execute(query, [stuff_id]);
+        [rows, fields] = await mysql_execute(connection, query, [stuff_id]);
 
         connection.end();
         if (rows.length == 0)
@@ -52,10 +52,10 @@ async function get_discussion(stuff_id, limit, cnt) {
 
     if (stuff_id == null || stuff_id == '') {
         var query = "SELECT * from tbl_discussion ORDER BY tbl_discussion.likes DESC LIMIT ?, ?";
-        [rows, fields] = await connection.execute(query, [limit, cnt]);
+        [rows, fields] = await mysql_execute(connection, query, [limit, cnt]);
     } else {
         var query = "SELECT * from tbl_discussion WHERE stuff_id LIKE ? ORDER BY tbl_discussion.likes DESC LIMIT ?, ?";
-        [rows, fields] = await connection.execute(query, [stuff_id, limit, cnt]);
+        [rows, fields] = await mysql_execute(connection, query, [stuff_id, limit, cnt]);
     }
     
     connection.end();
@@ -65,7 +65,7 @@ async function get_discussion(stuff_id, limit, cnt) {
 async function get_discussion_by_keyword(stuff_id, limit, cnt, keyword) {
     var connection = await connect();
     var query = "SELECT * from tbl_discussion WHERE tbl_discussion.content LIKE ? AND tbl_discussion.stuff_id LIKE ? ORDER BY tbl_discussion.likes DESC LIMIT ?, ?";
-    var [rows, fields] = await connection.execute(query, ['%' + keyword + '%', stuff_id, limit, cnt]);
+    var [rows, fields] = await mysql_execute(connection, query, ['%' + keyword + '%', stuff_id, limit, cnt]);
 
     connection.end();
     return rows;
@@ -75,7 +75,7 @@ async function get_discussion_by_id(id) {
     var connection = await connect();
 
     var query = "SELECT * from tbl_discussion WHERE id LIKE ?";
-    var [rows, fields] = await connection.execute(query, [id]);
+    var [rows, fields] = await mysql_execute(connection, query, [id]);
     
     connection.end();
     if (rows.length == 0)
@@ -91,10 +91,10 @@ async function get_comment(discussion_id) {
 
     if (discussion_id == null || discussion_id == '') {
         var query = "SELECT * from tbl_comment";
-        [rows, fields] = await connection.execute(query);
+        [rows, fields] = await mysql_execute(connection, query);
     } else {
         var query = "SELECT * from tbl_comment WHERE discussion_id LIKE ?";
-        [rows, fields] = await connection.execute(query, [discussion_id]);
+        [rows, fields] = await mysql_execute(connection, query, [discussion_id]);
     }
     
     connection.end();
@@ -109,7 +109,7 @@ async function add_discussion(stuff_id, content, user_type, user) {
         await start_transaction(connection);
 
         var query = "INSERT INTO tbl_discussion (stuff_id, content, user, user_type) VALUE (?,?,?,?)";
-        let [rows, fields] = await connection.execute(query, [stuff_id, content, user, user_type]);
+        let [rows, fields] = await mysql_execute(connection, query, [stuff_id, content, user, user_type]);
 
         await commit_transaction(connection);
         ret = rows.insertId > 0;
@@ -130,7 +130,7 @@ async function add_comment(discussion_id, parent_id, content, user_type, user) {
         await start_transaction(connection);
 
         var query = "INSERT INTO tbl_comment (discussion_id, parent_id, content, user, user_type) VALUE (?,?,?,?,?)";
-        let [rows, fields] = await connection.execute(query, [discussion_id, parent_id, content, user, user_type]);
+        let [rows, fields] = await mysql_execute(connection, query, [discussion_id, parent_id, content, user, user_type]);
 
         await commit_transaction(connection);
         ret = rows.insertId > 0;
@@ -148,7 +148,7 @@ async function add_token(connection, item) {
 
     try {
         var query = "INSERT INTO tbl_item (game_id, category_id, contract_address, token_id, name, description, attach_url, owner, is_anonymous, arcadedoge_price) VALUE(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        var [rows, fields] = await connection.execute(query, [item.game_id, item.category_id, item.contract_address, item.token_id, item.name, item.description, item.attach_url, item.owner, item.is_anonymous, item.arcadedoge_price]);
+        var [rows, fields] = await mysql_execute(connection, query, [item.game_id, item.category_id, item.contract_address, item.token_id, item.name, item.description, item.attach_url, item.owner, item.is_anonymous, item.arcadedoge_price]);
         ret = rows.insertId;
     } catch (err) {
         console.log(err);
@@ -161,7 +161,7 @@ async function add_mint_tx(connection, id, item) {
 
     try {
         var query = "INSERT INTO tbl_history (token_id, from_address, to_address, type) VALUE(?, ?, ?, ?)";
-        var [rows, fields] = await connection.execute(query, [id, item.owner, item.owner, CONST.TX_TYPE.MINT]);
+        var [rows, fields] = await mysql_execute(connection, query, [id, item.owner, item.owner, CONST.TX_TYPE.MINT]);
         ret = rows.insertId > 0;
     } catch (err) {
         console.log(err);
@@ -175,7 +175,7 @@ async function update_sync_block_number(connection, contract_type, block_number)
 
     try {
         var query = "UPDATE tbl_status SET block_number = ? WHERE contract_type = ?";
-        let [rows, fields] = await connection.execute(query, [block_number, contract_type]);
+        let [rows, fields] = await mysql_execute(connection, query, [block_number, contract_type]);
         ret = rows.affectedRows > 0;
     } catch (err) {
         console.log(err);
@@ -216,7 +216,7 @@ async function get_sync_block_number(contract_type) {
 
     try {
         var query = "SELECT block_number FROM tbl_status WHERE contract_type = ?";
-        let [rows, fields] = await connection.execute(query, [contract_type]);
+        let [rows, fields] = await mysql_execute(connection, query, [contract_type]);
         ret = rows[0].block_number;
     } catch (err) {
         console.log(err);
@@ -233,7 +233,7 @@ async function get_token_by_id(id) {
 
     try {
         var query = "SELECT * from tbl_item WHERE id = ?";
-        let [rows, fields] = await connection.execute(query, [id]);
+        let [rows, fields] = await mysql_execute(connection, query, [id]);
         if (rows.length > 0) ret = rows[0];
     } catch (err) {
         console.log(err);
@@ -249,7 +249,7 @@ async function update_token_by_id(id, game_id, category_id, name, description, i
 
     try {
         var query = "UPDATE tbl_item SET game_id=?, category_id=?, name=?, description=?, is_anonymous=?, arcadedoge_price=? WHERE tbl_item.id LIKE ?";
-        let [rows, fields] = await connection.execute(query, [game_id, category_id, name, description, is_anonymous, price, id]);
+        let [rows, fields] = await mysql_execute(connection, query, [game_id, category_id, name, description, is_anonymous, price, id]);
         ret = (rows.affectedRows > 0)
     } catch (err) {
         console.log(err);
@@ -265,7 +265,7 @@ async function get_token_by_tokenid(token_id) {
 
     try {
         var query = "SELECT * from tbl_item WHERE token_id = ?";
-        let [rows, fields] = await connection.execute(query, [token_id]);
+        let [rows, fields] = await mysql_execute(connection, query, [token_id]);
         if (rows.length > 0) ret = rows[0];
     } catch (err) {
         console.log(err);
@@ -281,7 +281,7 @@ async function get_token_by_contract_info(contract_address, token_id) {
 
     try {
         var query = "SELECT * from tbl_item WHERE contract_address = ? AND token_id = ?";
-        let [rows, fields] = await connection.execute(query, [contract_address, token_id]);
+        let [rows, fields] = await mysql_execute(connection, query, [contract_address, token_id]);
         if (rows.length > 0) ret = rows[0];
     } catch (err) {
         console.log(err);
@@ -296,7 +296,7 @@ async function delete_token(connection, id) {
 
     try {
         var query = "UPDATE tbl_item SET is_burnt = ? WHERE id = ?";
-        let [rows, fields] = await connection.execute(query, [CONST.BURN_STATUS.BURNT, id]);
+        let [rows, fields] = await mysql_execute(connection, query, [CONST.BURN_STATUS.BURNT, id]);
         ret = rows.affectedRows > 0;
     } catch (err) {
         console.log(err);
@@ -310,7 +310,7 @@ async function add_burn_tx(connection, item) {
 
     try {
         var query = "INSERT INTO tbl_history (token_id, from_address, to_address, type) VALUE (?, ?, ?, ?)";
-        let [rows, fields] = await connection.execute(query, [item.id, item.owner, item.owner, CONST.TX_TYPE.BUNRT]);
+        let [rows, fields] = await mysql_execute(connection, query, [item.id, item.owner, item.owner, CONST.TX_TYPE.BUNRT]);
         ret = rows.insertId > 0;
     } catch (err) {
         console.log(err);
@@ -352,11 +352,11 @@ async function update_token_visible(connection, id, visible, arcadedoge_price = 
     try {
         if (visible == CONST.VISIBILITY_STATUS.SHOW) {
             var query = "UPDATE tbl_item SET is_visible = ?, arcadedoge_price = ? WHERE id = ?";
-            let [rows, fields] = await connection.execute(query, [visible, arcadedoge_price, id]);
+            let [rows, fields] = await mysql_execute(connection, query, [visible, arcadedoge_price, id]);
             ret = rows.affectedRows > 0;
         } else if (visible == CONST.VISIBILITY_STATUS.HIDDEN) {
             var query = "UPDATE tbl_item SET is_visible = ? WHERE id = ?";
-            let [rows, fields] = await connection.execute(query, [visible, id]);
+            let [rows, fields] = await mysql_execute(connection, query, [visible, id]);
             ret = rows.affectedRows > 0;
         }
     } catch (err) {
@@ -421,7 +421,7 @@ async function update_token_owner(connection, id, owner) {
 
     try {
         var query = "UPDATE tbl_item SET owner = ?, is_visible = false WHERE id = ?";
-        let [rows, fields] = await connection.execute(query, [owner, id]);
+        let [rows, fields] = await mysql_execute(connection, query, [owner, id]);
         ret = rows.affectedRows > 0;
     } catch (err) {
         console.log(err);
@@ -435,7 +435,7 @@ async function add_exchange_tx(connection, id, from, to, asset_id, amount) {
 
     try {
         var query = "INSERT INTO tbl_history (token_id, from_address, to_address, asset_id, amount, type) VALUE(?, ?, ?, ?, ?, ?)";
-        let [rows, fields] = await connection.execute(query, [id, from, to, asset_id, amount, CONST.TX_TYPE.EXCHANGE]);
+        let [rows, fields] = await mysql_execute(connection, query, [id, from, to, asset_id, amount, CONST.TX_TYPE.EXCHANGE]);
         ret = rows.insertId > 0;
     } catch (err) {
         console.log(err);
@@ -449,7 +449,7 @@ async function add_transfer_tx(connection, id, from, to) {
 
     try {
         var query = "INSERT INTO tbl_history (token_id, from_address, to_address, type) VALUE(?, ?, ?, ?)";
-        let [rows, fields] = await connection.execute(query, [id, from, to, CONST.TX_TYPE.EXCHANGE]);
+        let [rows, fields] = await mysql_execute(connection, query, [id, from, to, CONST.TX_TYPE.EXCHANGE]);
         ret = rows.insertId > 0;
     } catch (err) {
         console.log(err);
@@ -463,7 +463,7 @@ async function increase_trade_cnt(connection, id) {
 
     try {
         var query = "UPDATE tbl_item SET trade_cnt = trade_cnt + 1 WHERE id = ?";
-        let [rows, fields] = await connection.execute(query, [id]);
+        let [rows, fields] = await mysql_execute(connection, query, [id]);
         ret = rows.affectedRows > 0;
     } catch (err) {
         console.log(err);
@@ -549,7 +549,7 @@ async function update_other_sync_block_number(contract_type, block_number) {
 async function get_games() {
     var connection = await connect();
     var query = "SELECT * FROM tbl_game";
-    let [rows, fields] = await connection.execute(query);
+    let [rows, fields] = await mysql_execute(connection, query);
     connection.end();
     return rows;
 }
@@ -557,7 +557,7 @@ async function get_games() {
 async function get_categories() {
     var connection = await connect();
     var query = "SELECT * from tbl_category";
-    let [rows, fields] = await connection.execute(query);
+    let [rows, fields] = await mysql_execute(connection, query);
     connection.end();
     return rows;
 }
@@ -565,7 +565,7 @@ async function get_categories() {
 async function get_items_by_address(address, sort_type, limit, cnt) {
     var connection = await connect();
     var query = "SELECT tbl_item.*, tbl_category.name as category_name from tbl_item LEFT JOIN tbl_category ON tbl_item.category_id = tbl_category.id WHERE is_burnt = 0 AND owner = ? " + get_order_by_clause(sort_type) + " LIMIT ?, ?";
-    let [rows, fields] = await connection.execute(query, [address, limit, cnt]);
+    let [rows, fields] = await mysql_execute(connection, query, [address, limit, cnt]);
     connection.end();
     return rows;
 }
@@ -573,7 +573,7 @@ async function get_items_by_address(address, sort_type, limit, cnt) {
 async function get_items_by_address_cnt(address) {
     var connection = await connect();
     var query = "SELECT COUNT(id) as total from tbl_item WHERE is_burnt = 0 AND owner = ?";
-    let [rows, fields] = await connection.execute(query, [address]);
+    let [rows, fields] = await mysql_execute(connection, query, [address]);
     connection.end();
     return rows[0].total;
 }
@@ -597,7 +597,7 @@ async function get_market_items(game, category, sort_type, limit, cnt) {
     query += " " + get_order_by_clause(sort_type) + " LIMIT ?, ?";
     params.push(limit);
     params.push(cnt);
-    let [rows, fields] = await connection.execute(query, params);
+    let [rows, fields] = await mysql_execute(connection, query, params);
     connection.end();
     return rows;
 }
@@ -618,7 +618,7 @@ async function get_market_items_cnt(game, category) {
         params.push(category);
     }
 
-    let [rows, fields] = await connection.execute(query, params);
+    let [rows, fields] = await mysql_execute(connection, query, params);
     connection.end();
     return rows[0].total;
 }
@@ -637,6 +637,15 @@ function get_order_by_clause(sort_type) {
         default:
             return "ORDER BY updated_at DESC";
     }
+}
+
+async function mysql_execute(connection, query, params = []) {
+    var stringify_params = []
+    for (var i = 0; i < params.length; i++) {
+        stringify_params.push(params[i].toString());
+    }
+
+    return await connection.execute(query, stringify_params);
 }
 
 module.exports = {
