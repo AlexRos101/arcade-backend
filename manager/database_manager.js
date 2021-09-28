@@ -525,7 +525,16 @@ async function get_items_by_address(address, sort_type, limit, cnt) {
     var connection = await connect();
     var query = "SELECT tbl_item.*, tbl_category.name as category_name from tbl_item LEFT JOIN tbl_category ON tbl_item.category_id = tbl_category.id WHERE is_burnt = 0 AND owner = ? " + get_order_by_clause(sort_type) + " LIMIT ?, ?";
     let [rows, fields] = await connection.execute(query, [address, limit, cnt]);
+    connection.end();
     return rows;
+}
+
+async function get_items_by_address_cnt(address) {
+    var connection = await connect();
+    var query = "SELECT COUNT(id) as total from tbl_item WHERE is_burnt = 0 AND owner = ?";
+    let [rows, fields] = await connection.execute(query, [address]);
+    connection.end();
+    return rows[0].total;
 }
 
 async function get_market_items(game, category, sort_type, limit, cnt) {
@@ -548,6 +557,7 @@ async function get_market_items(game, category, sort_type, limit, cnt) {
     params.push(limit);
     params.push(cnt);
     let [rows, fields] = await connection.execute(query, params);
+    connection.end();
     return rows;
 }
 
@@ -555,16 +565,15 @@ async function get_market_items(game, category, sort_type, limit, cnt) {
 
 function get_order_by_clause(sort_type) {
     switch(sort_type) {
-        case CONST.SORT_TYPE.RECENT:
-            return "ORDER BY updated_at DESC";
         case CONST.SORT_TYPE.PRICE_HIGH_LOW:
             return "ORDER BY arcadedoge_price DESC";
         case CONST.SORT_TYPE.PRICE_LOW_HIGH:
             return "ORDER BY arcadedoge_price ASC";
         case CONST.SORT_TYPE.POPULAR:
             return "ORDER BY trade_cnt DESC";
+        case CONST.SORT_TYPE.RECENT:
         default:
-            return "";
+            return "ORDER BY updated_at DESC";
     }
 }
 
@@ -587,6 +596,7 @@ module.exports = {
     get_games,
     get_categories,
     get_items_by_address,
+    get_items_by_address_cnt,
     get_market_items,
     update_other_sync_block_number
 }

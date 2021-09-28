@@ -202,10 +202,12 @@ function register_apis(app) {
         }
         
         var result = await database_manager.get_items_by_address(address, sort_type, limit, cnt);
+        var total = await database_manager.get_items_by_address_cnt(address);
 
         var ret = {
             result: true,
-            data: result
+            data: result,
+            total: total
         };
 
         response (ret, res);
