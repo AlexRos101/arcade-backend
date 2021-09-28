@@ -243,6 +243,49 @@ function register_apis(app) {
         response (ret, res);
     });
 
+    app.post("/update_item_by_id", async(req, res) => {
+        var id = req.fields.id;
+        var game_id = req.fields.game_id;
+        var category_id = req.fields.category_id;
+        var name = req.fields.name;
+        var is_anonymous = req.fields.is_anonymous;
+        var description = req.fields.description;
+        var price = req.fields.price;
+        
+        if (id == null) {
+            response_invalid();
+            return;
+        }
+        
+        var result = await database_manager.update_token_by_id(id, game_id, category_id, name, description, is_anonymous, price);
+
+        var ret = {
+            result: result != null,
+            data: result
+        };
+
+        response (ret, res);
+    });
+
+    app.post("/get_item_by_tokenid", async(req, res) => {
+        var id = req.fields.token_id;
+        
+        if (id == null) {
+            response_invalid();
+            return;
+        }
+        
+        var result = await database_manager.get_token_by_tokenid(id);
+
+        var ret = {
+            result: result != null,
+            data: result
+        };
+
+        response (ret, res);
+    });
+
+
     app.post('/upload_material', async (req, res, next) => {
         let files = req.files;
         if (files.myFile == null) {
