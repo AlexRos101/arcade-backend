@@ -455,6 +455,7 @@ async function exchange_token(contract_address, token_id, owner, asset_id, amoun
         await rollback_transaction(connection);
     }
 
+    connection.end();
     return ret;
 }
 
