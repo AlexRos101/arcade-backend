@@ -164,7 +164,8 @@ async function sync_exchange_blocks() {
                         Web3.utils.toChecksumAddress(decodedData.params[2].value), 
                         config.contract_arcadedoge, 
                         Web3.utils.fromWei(decodedData.params[3].value + '', 'ether'),
-                        Web3.utils.toChecksumAddress(decodedData.params[4].value)))
+                        Web3.utils.toChecksumAddress(decodedData.params[4].value),
+                        transaction.blockNumber))
                     ) {
                         result = false;
                     }
