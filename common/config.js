@@ -1,12 +1,12 @@
 var config = {
     port_number: 4000,
 
-    contract_exchange: '0x251b651c13B9a561856Ae70910Dc507B02519138',
+    contract_exchange: '0x2b02690Cdc6442A2A6c04C52659B9e996C85eAe3',
     contract_nft: '0x2BE5E405dD3a74e293eBa1cbbc9a8577fd2257B6',
     
-    material_path: "C:\\xampp\\htdocs\\arcadedoge\\materials\\",
-    thumbnail_path: "C:\\xampp\\htdocs\\arcadedoge\\thumbnails\\",
-    temp_path: "C:\\xampp\\htdocs\\arcadedoge\\temp\\",
+    material_path: "D:\\xampp\\htdocs\\arcadedoge\\materials\\",
+    thumbnail_path: "D:\\xampp\\htdocs\\arcadedoge\\thumbnails\\",
+    temp_path: "D:\\xampp\\htdocs\\arcadedoge\\temp\\",
 
     service_delay: 5000,
 
