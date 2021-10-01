@@ -1,33 +1,33 @@
-var ERC721_FUNCTION_NAME = {
+let ERC721_FUNCTION_NAME = {
     MINT: 'mint',
     BURN: 'burn',
     SAFE_TRANSFER_FROM: 'safeTransferFrom',
     TRANSFER_FROM: 'transferFrom'
 };
 
-var EXCHANGE_FUNCTION_NAME = {
+let EXCHANGE_FUNCTION_NAME = {
     SELL_REQUEST: 'SellRequest',
     CANCEL_SELL_REQUEST: 'CancelSellRequest',
     EXCHANGE: 'exchange',
     EXCHANGE_BUSD: 'exchangeBUSD'
 };
 
-var ANONYMOUS_TYPE = {
+let ANONYMOUS_TYPE = {
     NONE: 0,
     ANONYMOUS: 1
 };
 
-var VISIBILITY_STATUS = {
+let VISIBILITY_STATUS = {
     HIDDEN: 0,
     SHOW: 1
 };
 
-var BURN_STATUS = {
+let BURN_STATUS = {
     NONE: 0,
     BURNT: 1
 };
 
-var TX_TYPE = {
+let TX_TYPE = {
     NONE: 0,
     MINT: 1,
     EXCHANGE: 2,
@@ -35,12 +35,12 @@ var TX_TYPE = {
     TRANSFER: 4
 };
 
-var CONTRACT_TYPE = {
+let CONTRACT_TYPE = {
     NFT: 1,
     EXCHANGE: 2
 };
 
-var SORT_TYPE = {
+let SORT_TYPE = {
     RECENT: 1,
     PRICE_HIGH_LOW: 2,
     PRICE_LOW_HIGH: 3,

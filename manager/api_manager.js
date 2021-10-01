@@ -1,22 +1,19 @@
 const config = require("../common/config");
-var database_manager = require("./database_manager");
+const database_manager = require("./database_manager");
 const mv = require('mv');
-var Unrar = require('unrar');
-const makeDir = require('make-dir');
-var formidable = require('formidable');
-const { isNull } = require("util");
+const Unrar = require('unrar');
 
 function register_apis(app) {
     app.post ("/stuff/all", async(req, res) => {
-        var stuffs = await database_manager.get_stuff(null);
+        let stuffs = await database_manager.get_stuff(null);
         
-        for(var i = 0; i < stuffs.length; i ++) {
-            var stuff = stuffs[i];
-            var discussions = await database_manager.get_discussion(stuff.id, 0, 3);
+        for(let i = 0; i < stuffs.length; i ++) {
+            let stuff = stuffs[i];
+            let discussions = await database_manager.get_discussion(stuff.id, 0, 3);
             stuffs[i].discussions = discussions;
         }
 
-        var ret = {
+        let ret = {
             result: true,
             data: stuffs
         };
@@ -25,16 +22,16 @@ function register_apis(app) {
     });
 
     app.post ("/stuff/search", async(req, res) => {
-        var keyword = req.fields.keyword;
-        var stuffs = await database_manager.get_stuff(null);
+        let keyword = req.fields.keyword;
+        let stuffs = await database_manager.get_stuff(null);
         
-        for(var i = 0; i < stuffs.length; i ++) {
-            var stuff = stuffs[i];
-            var discussions = await database_manager.get_discussion_by_keyword(stuff.id, 0, 3,keyword);
+        for(let i = 0; i < stuffs.length; i ++) {
+            let stuff = stuffs[i];
+            let discussions = await database_manager.get_discussion_by_keyword(stuff.id, 0, 3,keyword);
             stuffs[i].discussions = discussions;
         }
 
-        var ret = {
+        let ret = {
             result: true,
             data: stuffs
         };
@@ -43,11 +40,11 @@ function register_apis(app) {
     });
 
     app.post("/stuff", async(req, res) => {
-        var id = req.fields.id;
+        let id = req.fields.id;
 
-        var stuff = await database_manager.get_stuff(id);
+        let stuff = await database_manager.get_stuff(id);
 
-        var ret = {
+        let ret = {
             result: true,
             data: stuff
         };
@@ -56,13 +53,13 @@ function register_apis(app) {
     });
 
     app.post("/discussion/all/", async(req, res) => {
-        var id = req.fields.id;
-        var limit = req.fields.limit;
-        var cnt = req.fields.cnt;
+        let id = req.fields.id;
+        let limit = req.fields.limit;
+        let cnt = req.fields.cnt;
 
-        var discussions = await database_manager.get_discussion(id, limit, cnt);
+        let discussions = await database_manager.get_discussion(id, limit, cnt);
 
-        var ret = {
+        let ret = {
             result: true,
             data: discussions
         };
@@ -71,19 +68,19 @@ function register_apis(app) {
     });
     
     app.post("/discussion", async(req, res) => {
-        var id = req.fields.id;
+        let id = req.fields.id;
 
-        var discussion = await database_manager.get_discussion_by_id(id);
+        let discussion = await database_manager.get_discussion_by_id(id);
 
         if (discussion != null) {
-            var comments = await database_manager.get_comment(id);
+            let comments = await database_manager.get_comment(id);
             
-            for (var i = comments.length - 1; i >= 0; i --) {
-                var comment = comments[i];
+            for (let i = comments.length - 1; i >= 0; i --) {
+                let comment = comments[i];
                 if (comment.parent_id == -1) {
                     continue;
                 }
-                for (var j = i - 1 ; j >= 0 ; j --) {
+                for (let j = i - 1 ; j >= 0 ; j --) {
                     if (comments[j].id == comment.parent_id) {
                         if (!('reply' in comments[j])) {
                             comments[j].reply = new Array();
@@ -98,7 +95,7 @@ function register_apis(app) {
             discussion.comments = comments;
         }
 
-        var ret = {
+        let ret = {
             result: true,
             data: discussion
         };
@@ -107,10 +104,10 @@ function register_apis(app) {
     });
 
     app.post("/discussion/new", async(req, res) => {
-        var stuff_id = req.fields.stuff_id;
-        var content = req.fields.content;
-        var user_type = req.fields.user_type;
-        var user = req.fields.user;
+        let stuff_id = req.fields.stuff_id;
+        let content = req.fields.content;
+        let user_type = req.fields.user_type;
+        let user = req.fields.user;
 
         if (!isValidDiscussionParams({
             stuff_id: stuff_id,
@@ -118,13 +115,13 @@ function register_apis(app) {
             user_type: user_type,
             user: user
         })) {
-            response_invalid();
+            response_invalid(res);
             return;
         }
 
-        var result = await database_manager.add_discussion(stuff_id, content, user_type, user);
+        let result = await database_manager.add_discussion(stuff_id, content, user_type, user);
 
-        var ret = {
+        let ret = {
             result: true,
             data: result
         };
@@ -133,11 +130,11 @@ function register_apis(app) {
     });
 
     app.post("/comment/new", async(req, res) => {
-        var discussion_id = req.fields.discussion_id;
-        var parent_id = req.fields.parent_id;
-        var content = req.fields.content;
-        var user_type = req.fields.user_type;
-        var user = req.fields.user;
+        let discussion_id = req.fields.discussion_id;
+        let parent_id = req.fields.parent_id;
+        let content = req.fields.content;
+        let user_type = req.fields.user_type;
+        let user = req.fields.user;
 
         if (!isValidCommentParams({
             discussion_id: discussion_id,
@@ -146,13 +143,13 @@ function register_apis(app) {
             user_type: user_type,
             user: user
         })) {
-            response_invalid();
+            response_invalid(res);
             return;
         }
 
-        var result = await database_manager.add_comment(discussion_id, parent_id, content, user_type, user);
+        let result = await database_manager.add_comment(discussion_id, parent_id, content, user_type, user);
 
-        var ret = {
+        let ret = {
             result: true,
             data: result
         };
@@ -161,9 +158,9 @@ function register_apis(app) {
     });
 
     app.post("/get_games", async(req, res) => {
-        var result = await database_manager.get_games();
+        let result = await database_manager.get_games();
 
-        var ret = {
+        let ret = {
             result: true,
             data: result
         };
@@ -172,9 +169,9 @@ function register_apis(app) {
     });
 
     app.post("/get_categories", async(req, res) => {
-        var result = await database_manager.get_categories();
+        let result = await database_manager.get_categories();
 
-        var ret = {
+        let ret = {
             result: true,
             data: result
         };
@@ -183,20 +180,20 @@ function register_apis(app) {
     });
 
     app.post("/get_items_by_address", async(req, res) => {
-        var address = req.fields.address;
-        var sort_type = req.fields.sort;
-        var limit = req.fields.limit;
-        var cnt = req.fields.cnt;
+        let address = req.fields.address;
+        let sort_type = req.fields.sort;
+        let limit = req.fields.limit;
+        let cnt = req.fields.cnt;
         
         if (address == null || address == '' || sort_type == null || limit == null || cnt == null) {
-            response_invalid();
+            response_invalid(res);
             return;
         }
         
-        var result = await database_manager.get_items_by_address(address, sort_type, limit, cnt);
-        var total = await database_manager.get_items_by_address_cnt(address);
+        let result = await database_manager.get_items_by_address(address, sort_type, limit, cnt);
+        let total = await database_manager.get_items_by_address_cnt(address);
 
-        var ret = {
+        let ret = {
             result: true,
             data: result,
             total: total
@@ -206,20 +203,20 @@ function register_apis(app) {
     });
 
     app.post("/get_market_items", async(req, res) => {
-        var game = req.fields.game;
-        var category = req.fields.category;
-        var sort_type = req.fields.sort;
-        var limit = req.fields.limit;
-        var cnt = req.fields.cnt;
+        let game = req.fields.game;
+        let category = req.fields.category;
+        let sort_type = req.fields.sort;
+        let limit = req.fields.limit;
+        let cnt = req.fields.cnt;
         
         if (game == null || category == null || sort_type == null || limit == null || cnt == null) {
-            response_invalid();
+            response_invalid(res);
             return;
         }
         
-        var result = await database_manager.get_market_items(game, category, sort_type, limit, cnt);
-        var total = await database_manager.get_market_items_cnt(game, category);
-        var ret = {
+        let result = await database_manager.get_market_items(game, category, sort_type, limit, cnt);
+        let total = await database_manager.get_market_items_cnt(game, category);
+        let ret = {
             result: true,
             data: result,
             total: total
@@ -229,16 +226,16 @@ function register_apis(app) {
     });
 
     app.post("/get_item_by_id", async(req, res) => {
-        var id = req.fields.id;
+        let id = req.fields.id;
         
         if (id == null) {
-            response_invalid();
+            response_invalid(res);
             return;
         }
         
-        var result = await database_manager.get_token_by_id(id);
+        let result = await database_manager.get_token_by_id(id);
 
-        var ret = {
+        let ret = {
             result: result != null,
             data: result
         };
@@ -247,22 +244,22 @@ function register_apis(app) {
     });
 
     app.post("/update_item_by_id", async(req, res) => {
-        var id = req.fields.id;
-        var game_id = req.fields.game_id;
-        var category_id = req.fields.category_id;
-        var name = req.fields.name;
-        var is_anonymous = req.fields.is_anonymous;
-        var description = req.fields.description;
-        var price = req.fields.price;
+        let id = req.fields.id;
+        let game_id = req.fields.game_id;
+        let category_id = req.fields.category_id;
+        let name = req.fields.name;
+        let is_anonymous = req.fields.is_anonymous;
+        let description = req.fields.description;
+        let price = req.fields.price;
         
         if (id == null) {
-            response_invalid();
+            response_invalid(res);
             return;
         }
         
-        var result = await database_manager.update_token_by_id(id, game_id, category_id, name, description, is_anonymous, price);
+        let result = await database_manager.update_token_by_id(id, game_id, category_id, name, description, is_anonymous, price);
 
-        var ret = {
+        let ret = {
             result: result != null,
             data: result
         };
@@ -271,16 +268,16 @@ function register_apis(app) {
     });
 
     app.post("/get_item_by_tokenid", async(req, res) => {
-        var id = req.fields.token_id;
+        let id = req.fields.token_id;
         
         if (id == null) {
-            response_invalid();
+            response_invalid(res);
             return;
         }
         
-        var result = await database_manager.get_token_by_tokenid(id);
+        let result = await database_manager.get_token_by_tokenid(id);
 
-        var ret = {
+        let ret = {
             result: result != null,
             data: result
         };
@@ -289,7 +286,7 @@ function register_apis(app) {
     });
 
 
-    app.post('/upload_material', async (req, res, next) => {
+    app.post('/upload_material', async (req, res, ) => {
         let files = req.files;
         if (files.myFile == null) {
             response({result: false}, res);
@@ -301,8 +298,8 @@ function register_apis(app) {
             return;
         }
 
-        var oldpath = files.myFile.path;
-        var newpath = config.material_path + files.myFile.name;
+        let oldpath = files.myFile.path;
+        let newpath = config.material_path + files.myFile.name;
         mv(oldpath, newpath, async function (err) {
             if (err) {
                 console.log(err);
@@ -310,17 +307,14 @@ function register_apis(app) {
                 return;
             }
 
-            var archive = new Unrar(newpath);
+            let archive = new Unrar(newpath);
 
             archive.list(function(err, entries) {
-                var exist_thumbnail = false;
-                for (var i = 0; i < entries.length; i++) {
-                    var name = entries[i].name;
-                    var type = entries[i].type
+                for (let i = 0; i < entries.length; i++) {
+                    let name = entries[i].name;
+                    let type = entries[i].type
                     if (type == 'File' && name == 'thumbnail.png') {
-                        exist_thumbnail = true;
-
-                        var stream = archive.stream('thumbnail.png'); // name of entry
+                        let stream = archive.stream('thumbnail.png'); // name of entry
                         stream.on('error', () => { response({result: false})});
                         stream.pipe(require('fs').createWriteStream(config.thumbnail_path + files.myFile.name.slice(0, files.myFile.name.length - 4) + ".png"));
 
@@ -343,8 +337,8 @@ function response(ret, res) {
     res.json(ret);
 }
 
-function response_invalid(ret, res) {
-    var ret = {
+function response_invalid(res) {
+    let ret = {
         result: false,
         msg: 'validation failed!'
     };

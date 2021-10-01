@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "npm start"
+    "test": "npm start",
+    "start": "node index.js",
+    "lint": "eslint . --ext .js"
   },
   "repository": {
     "type": "git",
@@ -29,5 +31,8 @@
     "mysql2": "^2.3.0",
     "unrar": "^0.2.0",
     "web3": "^1.5.1"
+  },
+  "devDependencies": {
+    "eslint": "^7.32.0"
   }
 }

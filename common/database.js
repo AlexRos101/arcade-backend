@@ -1,4 +1,4 @@
-var mysql_config = {
+let mysql_config = {
     host: 'localhost',
     user: 'root',
     password: '',

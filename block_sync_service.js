@@ -1,13 +1,12 @@
-var async = require('async');
-var config = require('./common/config');
-var database_manager = require('./manager/database_manager');
+let config = require('./common/config');
+let database_manager = require('./manager/database_manager');
 const erc721_decoder = require('abi-decoder');
 const erc721_abi = require('./contracts/ERC721.json');
 const exchange_decoder = require('abi-decoder');
 const exchange_abi = require('./contracts/EXCHANGE.json');
-var CONST = require('./common/constants');
+let CONST = require('./common/constants');
 const axios = require('axios');
-var Web3 = require('web3');
+let Web3 = require('web3');
 
 erc721_decoder.addABI(erc721_abi);
 exchange_decoder.addABI(exchange_abi);
@@ -24,13 +23,13 @@ async function sync_blocks() {
 async function sync_nft_blocks() {
     console.log("Sycnronizing NFT blocks");
 
-    var block_number = await database_manager.get_sync_block_number(CONST.CONTRACT_TYPE.NFT);
+    let block_number = await database_manager.get_sync_block_number(CONST.CONTRACT_TYPE.NFT);
 
-    var history_url = config.history_url;
+    let history_url = config.history_url;
     history_url = history_url.replace('CONTRACT_ADDRESS', config.contract_nft);
     history_url = history_url.replace('START_BLOCK', (block_number + 1) + '');
 
-    var history_data = null;
+    let history_data = null;
     try {
         history_data = await axios.get(history_url);
     } catch (err) {
@@ -38,11 +37,11 @@ async function sync_nft_blocks() {
         return;
     }
 
-    var transactions = history_data.data.result;
+    let transactions = history_data.data.result;
 
     try {
-        for (var j = 0; j < transactions.length; j++) {
-            var transaction = transactions[j];
+        for (let j = 0; j < transactions.length; j++) {
+            let transaction = transactions[j];
     
             if (transaction.isError == '1') continue;
     
@@ -50,12 +49,14 @@ async function sync_nft_blocks() {
     
             if (decodedData == null) continue;
     
-            var result = true;
+            let result = true;
+            let token_info = null;
+            let token = null;
     
             switch(decodedData.name) {
                 case CONST.ERC721_FUNCTION_NAME.MINT:
-                    var token_info = JSON.parse(decodedData.params[2].value);
-                    var token = {
+                    token_info = JSON.parse(decodedData.params[2].value);
+                    token = {
                         game_id: token_info.game_id,
                         category_id: token_info.category_id,
                         contract_address: config.contract_nft,
@@ -108,13 +109,13 @@ async function sync_nft_blocks() {
 async function sync_exchange_blocks() {
     console.log("Sycnronizing Exchange blocks.");
 
-    var sync_block_number = await database_manager.get_sync_block_number(CONST.CONTRACT_TYPE.EXCHANGE);
+    let sync_block_number = await database_manager.get_sync_block_number(CONST.CONTRACT_TYPE.EXCHANGE);
 
-    var history_url = config.history_url;
+    let history_url = config.history_url;
     history_url = history_url.replace('CONTRACT_ADDRESS', config.contract_exchange);
     history_url = history_url.replace('START_BLOCK', (sync_block_number + 1) + '');
 
-    var history_data = null;
+    let history_data = null;
     try {
         history_data = await axios.get(history_url);
     } catch (err) {
@@ -122,11 +123,11 @@ async function sync_exchange_blocks() {
         return;
     }
 
-    var transactions = history_data.data.result;
+    let transactions = history_data.data.result;
 
     try {
-        for (var j = 0; j < transactions.length; j++) {
-            var transaction = transactions[j];
+        for (let j = 0; j < transactions.length; j++) {
+            let transaction = transactions[j];
     
             if (transaction.isError == '1') continue;
     
@@ -134,7 +135,7 @@ async function sync_exchange_blocks() {
     
             if (decodedData == null) continue;
     
-            var result = true;
+            let result = true;
     
             switch(decodedData.name) {
                 case CONST.EXCHANGE_FUNCTION_NAME.SELL_REQUEST:

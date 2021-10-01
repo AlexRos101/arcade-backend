@@ -1,4 +1,4 @@
-var config = {
+let config = {
     port_number: 4000,
 
     contract_exchange: '0x2b02690Cdc6442A2A6c04C52659B9e996C85eAe3',

@@ -1,11 +1,11 @@
-var express = require("express");
-var cors = require('cors');
-var config = require('./common/config');
-var register_apis = require('./manager/api_manager');
+const express = require("express");
+const cors = require('cors');
+const config = require('./common/config');
+const register_apis = require('./manager/api_manager');
 const formidableMiddleware = require('express-formidable');
-var sync_blocks = require('./block_sync_service');
+const sync_blocks = require('./block_sync_service');
 
-var app = express();
+let app = express();
 app.use(cors());
 app.use(formidableMiddleware());
 
