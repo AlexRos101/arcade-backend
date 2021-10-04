@@ -1,58 +1,67 @@
-const config = require("../common/config");
-const database_manager = require("./database_manager");
+const config = require('../common/config');
+const database_manager = require('./database_manager');
 const mv = require('mv');
 const Unrar = require('unrar');
 
 function register_apis(app) {
-    app.post ("/stuff/all", async(req, res) => {
+    app.post('/stuff/all', async (req, res) => {
         let stuffs = await database_manager.get_stuff(null);
-        
-        for(let i = 0; i < stuffs.length; i ++) {
+
+        for (let i = 0; i < stuffs.length; i++) {
             let stuff = stuffs[i];
-            let discussions = await database_manager.get_discussion(stuff.id, 0, 3);
+            let discussions = await database_manager.get_discussion(
+                stuff.id,
+                0,
+                3
+            );
             stuffs[i].discussions = discussions;
         }
 
         let ret = {
             result: true,
-            data: stuffs
+            data: stuffs,
         };
 
         response(ret, res);
     });
 
-    app.post ("/stuff/search", async(req, res) => {
+    app.post('/stuff/search', async (req, res) => {
         let keyword = req.fields.keyword;
         let stuffs = await database_manager.get_stuff(null);
-        
-        for(let i = 0; i < stuffs.length; i ++) {
+
+        for (let i = 0; i < stuffs.length; i++) {
             let stuff = stuffs[i];
-            let discussions = await database_manager.get_discussion_by_keyword(stuff.id, 0, 3,keyword);
+            let discussions = await database_manager.get_discussion_by_keyword(
+                stuff.id,
+                0,
+                3,
+                keyword
+            );
             stuffs[i].discussions = discussions;
         }
 
         let ret = {
             result: true,
-            data: stuffs
+            data: stuffs,
         };
 
         response(ret, res);
     });
 
-    app.post("/stuff", async(req, res) => {
+    app.post('/stuff', async (req, res) => {
         let id = req.fields.id;
 
         let stuff = await database_manager.get_stuff(id);
 
         let ret = {
             result: true,
-            data: stuff
+            data: stuff,
         };
 
-        response (ret, res);
+        response(ret, res);
     });
 
-    app.post("/discussion/all/", async(req, res) => {
+    app.post('/discussion/all/', async (req, res) => {
         let id = req.fields.id;
         let limit = req.fields.limit;
         let cnt = req.fields.cnt;
@@ -61,30 +70,30 @@ function register_apis(app) {
 
         let ret = {
             result: true,
-            data: discussions
+            data: discussions,
         };
 
-        response (ret, res);
+        response(ret, res);
     });
-    
-    app.post("/discussion", async(req, res) => {
+
+    app.post('/discussion', async (req, res) => {
         let id = req.fields.id;
 
         let discussion = await database_manager.get_discussion_by_id(id);
 
         if (discussion != null) {
             let comments = await database_manager.get_comment(id);
-            
-            for (let i = comments.length - 1; i >= 0; i --) {
+
+            for (let i = comments.length - 1; i >= 0; i--) {
                 let comment = comments[i];
                 if (comment.parent_id == -1) {
                     continue;
                 }
-                for (let j = i - 1 ; j >= 0 ; j --) {
+                for (let j = i - 1; j >= 0; j--) {
                     if (comments[j].id == comment.parent_id) {
                         if (!('reply' in comments[j])) {
                             comments[j].reply = new Array();
-                        } 
+                        }
                         comments[j].reply.unshift(comment);
                         break;
                     }
@@ -97,153 +106,191 @@ function register_apis(app) {
 
         let ret = {
             result: true,
-            data: discussion
+            data: discussion,
         };
 
-        response (ret, res);
+        response(ret, res);
     });
 
-    app.post("/discussion/new", async(req, res) => {
+    app.post('/discussion/new', async (req, res) => {
         let stuff_id = req.fields.stuff_id;
         let content = req.fields.content;
         let user_type = req.fields.user_type;
         let user = req.fields.user;
 
-        if (!isValidDiscussionParams({
-            stuff_id: stuff_id,
-            content: content,
-            user_type: user_type,
-            user: user
-        })) {
+        if (
+            !isValidDiscussionParams({
+                stuff_id: stuff_id,
+                content: content,
+                user_type: user_type,
+                user: user,
+            })
+        ) {
             response_invalid(res);
             return;
         }
 
-        let result = await database_manager.add_discussion(stuff_id, content, user_type, user);
+        let result = await database_manager.add_discussion(
+            stuff_id,
+            content,
+            user_type,
+            user
+        );
 
         let ret = {
             result: true,
-            data: result
+            data: result,
         };
 
-        response (ret, res);
+        response(ret, res);
     });
 
-    app.post("/comment/new", async(req, res) => {
+    app.post('/comment/new', async (req, res) => {
         let discussion_id = req.fields.discussion_id;
         let parent_id = req.fields.parent_id;
         let content = req.fields.content;
         let user_type = req.fields.user_type;
         let user = req.fields.user;
 
-        if (!isValidCommentParams({
-            discussion_id: discussion_id,
-            parent_id: parent_id,
-            content: content,
-            user_type: user_type,
-            user: user
-        })) {
+        if (
+            !isValidCommentParams({
+                discussion_id: discussion_id,
+                parent_id: parent_id,
+                content: content,
+                user_type: user_type,
+                user: user,
+            })
+        ) {
             response_invalid(res);
             return;
         }
 
-        let result = await database_manager.add_comment(discussion_id, parent_id, content, user_type, user);
+        let result = await database_manager.add_comment(
+            discussion_id,
+            parent_id,
+            content,
+            user_type,
+            user
+        );
 
         let ret = {
             result: true,
-            data: result
+            data: result,
         };
 
-        response (ret, res);
+        response(ret, res);
     });
 
-    app.post("/get_games", async(req, res) => {
+    app.post('/get_games', async (req, res) => {
         let result = await database_manager.get_games();
 
         let ret = {
             result: true,
-            data: result
+            data: result,
         };
 
-        response (ret, res);
+        response(ret, res);
     });
 
-    app.post("/get_categories", async(req, res) => {
+    app.post('/get_categories', async (req, res) => {
         let result = await database_manager.get_categories();
 
         let ret = {
             result: true,
-            data: result
+            data: result,
         };
 
-        response (ret, res);
+        response(ret, res);
     });
 
-    app.post("/get_items_by_address", async(req, res) => {
+    app.post('/get_items_by_address', async (req, res) => {
         let address = req.fields.address;
         let sort_type = req.fields.sort;
         let limit = req.fields.limit;
         let cnt = req.fields.cnt;
-        
-        if (address == null || address == '' || sort_type == null || limit == null || cnt == null) {
+
+        if (
+            address == null ||
+            address == '' ||
+            sort_type == null ||
+            limit == null ||
+            cnt == null
+        ) {
             response_invalid(res);
             return;
         }
-        
-        let result = await database_manager.get_items_by_address(address, sort_type, limit, cnt);
+
+        let result = await database_manager.get_items_by_address(
+            address,
+            sort_type,
+            limit,
+            cnt
+        );
         let total = await database_manager.get_items_by_address_cnt(address);
 
         let ret = {
             result: true,
             data: result,
-            total: total
+            total: total,
         };
 
-        response (ret, res);
+        response(ret, res);
     });
 
-    app.post("/get_market_items", async(req, res) => {
+    app.post('/get_market_items', async (req, res) => {
         let game = req.fields.game;
         let category = req.fields.category;
         let sort_type = req.fields.sort;
         let limit = req.fields.limit;
         let cnt = req.fields.cnt;
-        
-        if (game == null || category == null || sort_type == null || limit == null || cnt == null) {
+
+        if (
+            game == null ||
+            category == null ||
+            sort_type == null ||
+            limit == null ||
+            cnt == null
+        ) {
             response_invalid(res);
             return;
         }
-        
-        let result = await database_manager.get_market_items(game, category, sort_type, limit, cnt);
+
+        let result = await database_manager.get_market_items(
+            game,
+            category,
+            sort_type,
+            limit,
+            cnt
+        );
         let total = await database_manager.get_market_items_cnt(game, category);
         let ret = {
             result: true,
             data: result,
-            total: total
+            total: total,
         };
 
-        response (ret, res);
+        response(ret, res);
     });
 
-    app.post("/get_item_by_id", async(req, res) => {
+    app.post('/get_item_by_id', async (req, res) => {
         let id = req.fields.id;
-        
+
         if (id == null) {
             response_invalid(res);
             return;
         }
-        
+
         let result = await database_manager.get_token_by_id(id);
 
         let ret = {
             result: result != null,
-            data: result
+            data: result,
         };
 
-        response (ret, res);
+        response(ret, res);
     });
 
-    app.post("/update_item_by_id", async(req, res) => {
+    app.post('/update_item_by_id', async (req, res) => {
         let id = req.fields.id;
         let game_id = req.fields.game_id;
         let category_id = req.fields.category_id;
@@ -251,50 +298,62 @@ function register_apis(app) {
         let is_anonymous = req.fields.is_anonymous;
         let description = req.fields.description;
         let price = req.fields.price;
-        
+
         if (id == null) {
             response_invalid(res);
             return;
         }
-        
-        let result = await database_manager.update_token_by_id(id, game_id, category_id, name, description, is_anonymous, price);
+
+        let result = await database_manager.update_token_by_id(
+            id,
+            game_id,
+            category_id,
+            name,
+            description,
+            is_anonymous,
+            price
+        );
 
         let ret = {
             result: result != null,
-            data: result
+            data: result,
         };
 
-        response (ret, res);
+        response(ret, res);
     });
 
-    app.post("/get_item_by_tokenid", async(req, res) => {
+    app.post('/get_item_by_tokenid', async (req, res) => {
         let id = req.fields.token_id;
-        
+
         if (id == null) {
             response_invalid(res);
             return;
         }
-        
+
         let result = await database_manager.get_token_by_tokenid(id);
 
         let ret = {
             result: result != null,
-            data: result
+            data: result,
         };
 
-        response (ret, res);
+        response(ret, res);
     });
 
-
-    app.post('/upload_material', async (req, res, ) => {
+    app.post('/upload_material', async (req, res) => {
         let files = req.files;
         if (files.myFile == null) {
-            response({result: false}, res);
+            response({ result: false }, res);
             return;
         }
 
-        if (files.myFile.name.slice(files.myFile.name.length - 4, files.myFile.name.length) != '.rar') {
-            response({result: false}, res);
+        if (
+            files.myFile.name.slice(
+                files.myFile.name.length - 4,
+                files.myFile.name.length
+            ) != '.rar'
+        ) {
+            response({ result: false }, res);
             return;
         }
 
@@ -303,27 +362,45 @@ function register_apis(app) {
         mv(oldpath, newpath, async function (err) {
             if (err) {
                 console.log(err);
-                response({result: false}, res);
+                response({ result: false }, res);
                 return;
             }
 
             let archive = new Unrar(newpath);
 
-            archive.list(function(err, entries) {
+            archive.list(function (err, entries) {
                 for (let i = 0; i < entries.length; i++) {
                     let name = entries[i].name;
-                    let type = entries[i].type
+                    let type = entries[i].type;
                     if (type == 'File' && name == 'thumbnail.png') {
                         let stream = archive.stream('thumbnail.png'); // name of entry
-                        stream.on('error', () => { response({result: false})});
-                        stream.pipe(require('fs').createWriteStream(config.thumbnail_path + files.myFile.name.slice(0, files.myFile.name.length - 4) + ".png"));
+                        stream.on('error', () => {
+                            response({ result: false });
+                        });
+                        stream.pipe(
+                            require('fs').createWriteStream(
+                                config.thumbnail_path +
+                                    files.myFile.name.slice(
+                                        0,
+                                        files.myFile.name.length - 4
+                                    ) +
+                                    '.png'
+                            )
+                        );
 
-                        response({result: true}, res);
+                        response({ result: true }, res);
                         return;
                     }
                 }
 
-                response({result: false, code: -1, msg: 'Not exist thumbnail file.'}, res);
+                response(
+                    {
+                        result: false,
+                        code: -1,
+                        msg: 'Not exist thumbnail file.',
+                    },
+                    res
+                );
                 return;
             });
         });
@@ -340,7 +417,7 @@ function response(ret, res) {
 function response_invalid(res) {
     let ret = {
         result: false,
-        msg: 'validation failed!'
+        msg: 'validation failed!',
     };
     response(ret, res);
 }
@@ -383,7 +460,5 @@ function isValidCommentParams(params) {
 
     return true;
 }
-
-
 
 module.exports = register_apis;

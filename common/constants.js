@@ -2,29 +2,29 @@ let ERC721_FUNCTION_NAME = {
     MINT: 'mint',
     BURN: 'burn',
     SAFE_TRANSFER_FROM: 'safeTransferFrom',
-    TRANSFER_FROM: 'transferFrom'
+    TRANSFER_FROM: 'transferFrom',
 };
 
 let EXCHANGE_FUNCTION_NAME = {
     SELL_REQUEST: 'SellRequest',
     CANCEL_SELL_REQUEST: 'CancelSellRequest',
     EXCHANGE: 'exchange',
-    EXCHANGE_BUSD: 'exchangeBUSD'
+    EXCHANGE_BUSD: 'exchangeBUSD',
 };
 
 let ANONYMOUS_TYPE = {
     NONE: 0,
-    ANONYMOUS: 1
+    ANONYMOUS: 1,
 };
 
 let VISIBILITY_STATUS = {
     HIDDEN: 0,
-    SHOW: 1
+    SHOW: 1,
 };
 
 let BURN_STATUS = {
     NONE: 0,
-    BURNT: 1
+    BURNT: 1,
 };
 
 let TX_TYPE = {
@@ -32,19 +32,19 @@ let TX_TYPE = {
     MINT: 1,
     EXCHANGE: 2,
     BUNRT: 3,
-    TRANSFER: 4
+    TRANSFER: 4,
 };
 
 let CONTRACT_TYPE = {
     NFT: 1,
-    EXCHANGE: 2
+    EXCHANGE: 2,
 };
 
 let SORT_TYPE = {
     RECENT: 1,
     PRICE_HIGH_LOW: 2,
     PRICE_LOW_HIGH: 3,
-    POPULAR: 4
+    POPULAR: 4,
 };
 
 module.exports = {
@@ -55,5 +55,5 @@ module.exports = {
     BURN_STATUS,
     TX_TYPE,
     CONTRACT_TYPE,
-    SORT_TYPE
-}
+    SORT_TYPE,
+};

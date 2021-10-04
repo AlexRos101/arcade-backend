@@ -1,4 +1,4 @@
-const express = require("express");
+const express = require('express');
 const cors = require('cors');
 const config = require('./common/config');
 const register_apis = require('./manager/api_manager');
