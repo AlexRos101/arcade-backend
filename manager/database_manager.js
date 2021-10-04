@@ -1,10 +1,17 @@
-const mysql = require('mysql2/promise');
-const mysql_config = require('../common/database');
 const CONST = require('../common/constants');
 
 async function connect() {
-    const connection = await mysql.createConnection(mysql_config);
-    return connection;
+    return new Promise((resolve, reject) => {
+        mysqlPool
+            .getConnection()
+            .then((connection) => {
+                resolve(connection);
+            })
+            .catch((err) => {
+                console.log(err);
+                reject(err);
+            });
+    });
 }
 
 async function start_transaction(connection) {
@@ -31,13 +38,13 @@ async function get_stuff(stuff_id) {
         let query = 'SELECT * from tbl_stuff';
         [rows] = await mysql_execute(connection, query);
 
-        connection.end();
+        connection.release();
         return rows;
     } else {
         let query = 'SELECT * from tbl_stuff WHERE id LIKE ?';
         [rows] = await mysql_execute(connection, query, [stuff_id]);
 
-        connection.end();
+        connection.release();
         if (rows.length == 0) return null;
 
         return rows[0];
@@ -63,7 +70,7 @@ async function get_discussion(stuff_id, limit, cnt) {
         [rows] = await mysql_execute(connection, query, [stuff_id, limit, cnt]);
     }
 
-    connection.end();
+    connection.release();
     return rows;
 }
 
@@ -80,7 +87,7 @@ async function get_discussion_by_keyword(stuff_id, limit, cnt, keyword) {
         cnt,
     ]);
 
-    connection.end();
+    connection.release();
     return rows;
 }
 
@@ -93,7 +100,7 @@ async function get_discussion_by_id(id) {
         'WHERE tbl_discussion.id LIKE ? GROUP BY tbl_discussion.id';
     let [rows] = await mysql_execute(connection, query, [id]);
 
-    connection.end();
+    connection.release();
     if (rows.length == 0) return null;
 
     return rows[0];
@@ -112,7 +119,7 @@ async function get_comment(discussion_id) {
         [rows] = await mysql_execute(connection, query, [discussion_id]);
     }
 
-    connection.end();
+    connection.release();
     return rows;
 }
 
@@ -140,7 +147,7 @@ async function add_discussion(stuff_id, content, user_type, user) {
         await rollback_transaction(connection);
     }
 
-    connection.end();
+    connection.release();
     return ret;
 }
 
@@ -170,7 +177,7 @@ async function add_comment(discussion_id, parent_id, content, user_type, user) {
         await rollback_transaction(connection);
     }
 
-    connection.end();
+    connection.release();
     return ret;
 }
 
@@ -277,7 +284,7 @@ async function mint_token(item, block_number) {
         await rollback_transaction(connection);
     }
 
-    connection.end();
+    connection.release();
     return ret;
 }
 
@@ -294,7 +301,7 @@ async function get_sync_block_number(contract_type) {
         console.log(err);
     }
 
-    connection.end();
+    connection.release();
 
     return ret;
 }
@@ -311,7 +318,7 @@ async function get_token_by_id(id) {
         console.log(err);
     }
 
-    connection.end();
+    connection.release();
     return ret;
 }
 
@@ -344,7 +351,7 @@ async function update_token_by_id(
         console.log(err);
     }
 
-    connection.end();
+    connection.release();
     return ret;
 }
 
@@ -360,7 +367,7 @@ async function get_token_by_tokenid(token_id) {
         console.log(err);
     }
 
-    connection.end();
+    connection.release();
     return ret;
 }
 
@@ -381,7 +388,7 @@ async function get_token_by_contract_info(contract_address, token_id) {
         console.log(err);
     }
 
-    connection.end();
+    connection.release();
     return ret;
 }
 
@@ -461,7 +468,7 @@ async function bunr_token(contract_address, token_id, block_number) {
         await rollback_transaction(connection);
     }
 
-    connection.end();
+    connection.release();
     return ret;
 }
 
@@ -542,7 +549,7 @@ async function sell_token(
         await rollback_transaction(connection);
     }
 
-    connection.end();
+    connection.release();
     return ret;
 }
 
@@ -586,7 +593,7 @@ async function cancel_sell_token(contract_address, token_id, block_number) {
         await rollback_transaction(connection);
     }
 
-    connection.end();
+    connection.release();
     return ret;
 }
 
@@ -723,7 +730,7 @@ async function exchange_token(
         await rollback_transaction(connection);
     }
 
-    connection.end();
+    connection.release();
     return ret;
 }
 
@@ -771,7 +778,7 @@ async function transfer_token(
         await rollback_transaction(connection);
     }
 
-    connection.end();
+    connection.release();
     return ret;
 }
 
@@ -794,7 +801,7 @@ async function update_other_sync_block_number(contract_type, block_number) {
         await rollback_transaction(connection);
     }
 
-    connection.end();
+    connection.release();
     return ret;
 }
 
@@ -802,7 +809,7 @@ async function get_games() {
     let connection = await connect();
     let query = 'SELECT * FROM tbl_game';
     let [rows] = await mysql_execute(connection, query);
-    connection.end();
+    connection.release();
     return rows;
 }
 
@@ -810,7 +817,7 @@ async function get_categories() {
     let connection = await connect();
     let query = 'SELECT * from tbl_category';
     let [rows] = await mysql_execute(connection, query);
-    connection.end();
+    connection.release();
     return rows;
 }
 
@@ -823,7 +830,7 @@ async function get_items_by_address(address, sort_type, limit, cnt) {
         get_order_by_clause(sort_type) +
         ' LIMIT ?, ?';
     let [rows] = await mysql_execute(connection, query, [address, limit, cnt]);
-    connection.end();
+    connection.release();
     return rows;
 }
 
@@ -833,7 +840,7 @@ async function get_items_by_address_cnt(address) {
         'SELECT COUNT(id) as total from tbl_item ' +
         'WHERE is_burnt = 0 AND owner = ?';
     let [rows] = await mysql_execute(connection, query, [address]);
-    connection.end();
+    connection.release();
     return rows[0].total;
 }
 
@@ -860,7 +867,7 @@ async function get_market_items(game, category, sort_type, limit, cnt) {
     params.push(limit);
     params.push(cnt);
     let [rows] = await mysql_execute(connection, query, params);
-    connection.end();
+    connection.release();
     return rows;
 }
 
@@ -883,7 +890,7 @@ async function get_market_items_cnt(game, category) {
     }
 
     let [rows] = await mysql_execute(connection, query, params);
-    connection.end();
+    connection.release();
     return rows[0].total;
 }
 
@@ -938,7 +945,7 @@ async function get_likes(discussion_id, parent_id, user) {
         parent_id,
         user,
     ]);
-    connection.end();
+    connection.release();
     return rows;
 }
 
@@ -951,7 +958,7 @@ async function get_likes_count(discussion_id, parent_id) {
         discussion_id,
         parent_id,
     ]);
-    connection.end();
+    connection.release();
     return rows[0].total;
 }
 
@@ -975,7 +982,7 @@ async function mysql_execute(connection, query, params = []) {
         stringify_params.push(params[i].toString());
     }
 
-    return await connection.execute(query, stringify_params);
+    return await connection.query(query, stringify_params);
 }
 
 module.exports = {

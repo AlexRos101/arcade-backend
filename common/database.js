@@ -3,6 +3,7 @@ let mysql_config = {
     user: 'root',
     password: '',
     database: 'arcadedoge_db',
+    connectionLimit: 100,
 };
 
 module.exports = mysql_config;
