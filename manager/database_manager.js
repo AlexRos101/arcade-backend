@@ -51,13 +51,15 @@ async function get_discussion(stuff_id, limit, cnt) {
 
     if (stuff_id == null || stuff_id == '') {
         let query =
-            'SELECT * from tbl_discussion ' +
-            'ORDER BY tbl_discussion.likes DESC LIMIT ?, ?';
+            'SELECT tbl_discussion.*, COUNT(tbl_comment.id) as comment_cnt FROM tbl_discussion ' +
+            'LEFT JOIN tbl_comment ON tbl_discussion.id = tbl_comment.discussion_id ' +
+            'GROUP BY tbl_discussion.id ORDER BY tbl_discussion.likes DESC LIMIT ?, ?';
         [rows] = await mysql_execute(connection, query, [limit, cnt]);
     } else {
         let query =
-            'SELECT * from tbl_discussion ' +
-            'WHERE stuff_id LIKE ? ORDER BY tbl_discussion.likes DESC LIMIT ?, ?';
+            'SELECT tbl_discussion.*, COUNT(tbl_comment.id) as comment_cnt FROM tbl_discussion ' +
+            'LEFT JOIN tbl_comment ON tbl_discussion.id = tbl_comment.discussion_id ' +
+            'WHERE stuff_id LIKE ? GROUP BY tbl_discussion.id ORDER BY tbl_discussion.likes DESC LIMIT ?, ?';
         [rows] = await mysql_execute(connection, query, [stuff_id, limit, cnt]);
     }
 
@@ -85,7 +87,10 @@ async function get_discussion_by_keyword(stuff_id, limit, cnt, keyword) {
 async function get_discussion_by_id(id) {
     let connection = await connect();
 
-    let query = 'SELECT * from tbl_discussion WHERE id LIKE ?';
+    let query =
+        'SELECT tbl_discussion.*, COUNT(tbl_comment.id) as comment_cnt from tbl_discussion ' +
+        'LEFT JOIN tbl_comment ON tbl_discussion.id = tbl_comment.discussion_id ' +
+        'WHERE tbl_discussion.id LIKE ? GROUP BY tbl_discussion.id';
     let [rows] = await mysql_execute(connection, query, [id]);
 
     connection.end();
@@ -882,6 +887,74 @@ async function get_market_items_cnt(game, category) {
     return rows[0].total;
 }
 
+async function insert_likes(discussion_id, parent_id, user) {
+    let connection = await connect();
+    let ret = false;
+
+    try {
+        let query =
+            'INSERT INTO tbl_likes ' +
+            '(discussion_id, parent_id, user) VALUE(?, ?, ?)';
+        let [rows] = await mysql_execute(connection, query, [
+            discussion_id,
+            parent_id,
+            user,
+        ]);
+        ret = rows.insertId > 0;
+    } catch (err) {
+        console.log(err);
+    }
+    return ret;
+}
+
+async function delete_likes(discussion_id, parent_id, user) {
+    let connection = await connect();
+    let ret = false;
+
+    try {
+        let query =
+            'DELETE FROM tbl_likes ' +
+            'WHERE discussion_id LIKE ? AND parent_id LIKE ? AND user LIKE ?';
+        let [rows] = await mysql_execute(connection, query, [
+            discussion_id,
+            parent_id,
+            user,
+        ]);
+        ret = rows.affectedRows > 0;
+    } catch (err) {
+        console.log(err);
+    }
+
+    return ret;
+}
+
+async function get_likes(discussion_id, parent_id, user) {
+    let connection = await connect();
+    let query =
+        'SELECT id from tbl_likes ' +
+        'WHERE discussion_id LIKE ? AND parent_id LIKE ? AND user LIKE ?';
+    let [rows] = await mysql_execute(connection, query, [
+        discussion_id,
+        parent_id,
+        user,
+    ]);
+    connection.end();
+    return rows;
+}
+
+async function get_likes_count(discussion_id, parent_id) {
+    let connection = await connect();
+    let query =
+        'SELECT COUNT(id) as total from tbl_likes ' +
+        'WHERE discussion_id LIKE ? AND parent_id LIKE ?';
+    let [rows] = await mysql_execute(connection, query, [
+        discussion_id,
+        parent_id,
+    ]);
+    connection.end();
+    return rows[0].total;
+}
+
 function get_order_by_clause(sort_type) {
     switch (sort_type) {
         case CONST.SORT_TYPE.PRICE_HIGH_LOW:
@@ -931,4 +1004,8 @@ module.exports = {
     get_market_items_cnt,
     update_other_sync_block_number,
     get_discussion_by_keyword,
+    insert_likes,
+    delete_likes,
+    get_likes,
+    get_likes_count,
 };

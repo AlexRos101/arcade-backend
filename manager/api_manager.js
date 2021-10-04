@@ -14,6 +14,13 @@ function register_apis(app) {
                 0,
                 3
             );
+            for (let j = 0; j < discussions.length; j++) {
+                let likes_count = await database_manager.get_likes_count(
+                    discussions[j].id,
+                    -1
+                );
+                discussions[j].likes = likes_count;
+            }
             stuffs[i].discussions = discussions;
         }
 
@@ -67,7 +74,13 @@ function register_apis(app) {
         let cnt = req.fields.cnt;
 
         let discussions = await database_manager.get_discussion(id, limit, cnt);
-
+        for (let i = 0; i < discussions.length; i++) {
+            const likes_count = await database_manager.get_likes_count(
+                discussions[i].id,
+                -1
+            );
+            discussions[i].likes = likes_count;
+        }
         let ret = {
             result: true,
             data: discussions,
@@ -80,11 +93,21 @@ function register_apis(app) {
         let id = req.fields.id;
 
         let discussion = await database_manager.get_discussion_by_id(id);
-
+        const likes_count = await database_manager.get_likes_count(
+            discussion.id,
+            -1
+        );
+        discussion.likes = likes_count;
         if (discussion != null) {
             let comments = await database_manager.get_comment(id);
 
             for (let i = comments.length - 1; i >= 0; i--) {
+                const likes_count = await database_manager.get_likes_count(
+                    comments[i].discussion_id,
+                    comments[i].id
+                );
+                comments[i].likes = likes_count;
+
                 let comment = comments[i];
                 if (comment.parent_id == -1) {
                     continue;
@@ -183,6 +206,53 @@ function register_apis(app) {
 
     app.post('/get_games', async (req, res) => {
         let result = await database_manager.get_games();
+
+        let ret = {
+            result: true,
+            data: result,
+        };
+
+        response(ret, res);
+    });
+
+    app.post('/set_likes', async (req, res) => {
+        const discussion_id = req.fields.discussion_id;
+        const parent_id = req.fields.parent_id;
+        const user = req.fields.user;
+        const likesOrUnlikes = req.fields.likes;
+        let result = {};
+        if (likesOrUnlikes == true) {
+            result = await database_manager.insert_likes(
+                discussion_id,
+                parent_id,
+                user
+            );
+        } else {
+            result = await database_manager.delete_likes(
+                discussion_id,
+                parent_id,
+                user
+            );
+        }
+
+        let ret = {
+            result: true,
+            data: result,
+        };
+
+        response(ret, res);
+    });
+
+    app.post('/get_likes', async (req, res) => {
+        const discussion_id = req.fields.discussion_id;
+        const parent_id = req.fields.parent_id;
+        const user = req.fields.user;
+
+        let result = await database_manager.get_likes(
+            discussion_id,
+            parent_id,
+            user
+        );
 
         let ret = {
             result: true,
