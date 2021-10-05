@@ -865,7 +865,7 @@ async function get_market_items(game, category, sort_type, limit, cnt) {
 
     query += ' ' + get_order_by_clause(sort_type) + ' LIMIT ?, ?';
     params.push(limit);
-    params.push(cnt);
+    params.push(cnt);console.log(query);console.log(params);
     let [rows] = await mysql_execute(connection, query, params);
     connection.release();
     return rows;
@@ -977,12 +977,12 @@ function get_order_by_clause(sort_type) {
 }
 
 async function mysql_execute(connection, query, params = []) {
-    let stringify_params = [];
-    for (let i = 0; i < params.length; i++) {
-        stringify_params.push(params[i].toString());
-    }
+    // let stringify_params = [];
+    // for (let i = 0; i < params.length; i++) {
+    //     stringify_params.push(params[i].toString());
+    // }
 
-    return await connection.query(query, stringify_params);
+    return await connection.query(query, params);
 }
 
 module.exports = {
