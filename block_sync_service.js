@@ -66,7 +66,7 @@ async function sync_nft_blocks() {
                         name: token_info.name,
                         description: token_info.description,
                         attach_url: decodedData.params[1].value,
-                        owner: transaction.from,
+                        owner: Web3.utils.toChecksumAddress(transaction.from),
                         arcadedoge_price: token_info.arcadedoge_price,
                         is_anonymous: token_info.is_anonymous,
                     };
@@ -82,7 +82,7 @@ async function sync_nft_blocks() {
                     break;
                 case CONST.ERC721_FUNCTION_NAME.BURN:
                     if (
-                        !(await database_manager.bunr_token(
+                        !(await database_manager.burn_token(
                             config.contract_nft,
                             decodedData.params[0].value,
                             transaction.blockNumber

@@ -430,7 +430,7 @@ async function add_burn_tx(connection, item) {
     return ret;
 }
 
-async function bunr_token(contract_address, token_id, block_number) {
+async function burn_token(contract_address, token_id, block_number) {
     let connection = await connect();
     let ret = false;
 
@@ -998,7 +998,7 @@ module.exports = {
     update_token_by_id,
     get_token_by_tokenid,
     get_token_by_contract_info,
-    bunr_token,
+    burn_token,
     sell_token,
     cancel_sell_token,
     exchange_token,
