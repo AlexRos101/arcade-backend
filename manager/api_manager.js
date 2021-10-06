@@ -2,6 +2,7 @@ const config = require('../common/config');
 const database_manager = require('./database_manager');
 const mv = require('mv');
 const Unrar = require('unrar');
+const yauzl = require('yauzl');
 
 function register_apis(app) {
     app.post('/stuff/all', async (req, res) => {
@@ -421,7 +422,11 @@ function register_apis(app) {
             files.myFile.name.slice(
                 files.myFile.name.length - 4,
                 files.myFile.name.length
-            ) != '.rar'
+            ) != '.rar' &&
+            files.myFile.name.slice(
+                files.myFile.name.length - 4,
+                files.myFile.name.length
+            ) != '.zip'
         ) {
             response({ result: false }, res);
             return;
@@ -436,43 +441,100 @@ function register_apis(app) {
                 return;
             }
 
-            let archive = new Unrar(newpath);
+            if (newpath.slice(newpath.length - 4, newpath.length) == '.rar') {
+                let archive = new Unrar(newpath);
 
-            archive.list(function (err, entries) {
-                for (let i = 0; i < entries.length; i++) {
-                    let name = entries[i].name;
-                    let type = entries[i].type;
-                    if (type == 'File' && name == 'thumbnail.png') {
-                        let stream = archive.stream('thumbnail.png'); // name of entry
-                        stream.on('error', () => {
-                            response({ result: false });
-                        });
-                        stream.pipe(
-                            require('fs').createWriteStream(
-                                config.thumbnail_path +
-                                    files.myFile.name.slice(
-                                        0,
-                                        files.myFile.name.length - 4
-                                    ) +
-                                    '.png'
-                            )
-                        );
+                archive.list(function (err, entries) {
+                    for (let i = 0; i < entries.length; i++) {
+                        let name = entries[i].name;
+                        let type = entries[i].type;
+                        if (type == 'File' && name == 'thumbnail.png') {
+                            let stream = archive.stream('thumbnail.png'); // name of entry
+                            stream.on('error', () => {
+                                response({ result: false });
+                            });
+                            stream.pipe(
+                                require('fs').createWriteStream(
+                                    config.thumbnail_path +
+                                        files.myFile.name.slice(
+                                            0,
+                                            files.myFile.name.length - 4
+                                        ) +
+                                        '.png'
+                                )
+                            );
 
-                        response({ result: true }, res);
+                            response({ result: true }, res);
+                            return;
+                        }
+                    }
+
+                    response(
+                        {
+                            result: false,
+                            code: -1,
+                            msg: 'Not exist thumbnail file.',
+                        },
+                        res
+                    );
+                    return;
+                });
+            } else if (
+                newpath.slice(newpath.length - 4, newpath.length) == '.zip'
+            ) {
+                yauzl.open(newpath, { lazyEntries: true }, (err, zipfile) => {
+                    if (err) {
+                        response({ result: false }, res);
                         return;
                     }
-                }
 
-                response(
-                    {
-                        result: false,
-                        code: -1,
-                        msg: 'Not exist thumbnail file.',
-                    },
-                    res
-                );
-                return;
-            });
+                    let exist_thumbnail = false;
+                    zipfile.readEntry();
+                    zipfile.on('entry', (entry) => {
+                        if (entry.fileName == 'thumbnail.png') {
+                            zipfile.openReadStream(entry, (err, readStream) => {
+                                if (err) {
+                                    response({ result: false }, res);
+                                    return;
+                                }
+
+                                readStream.on('end', () => {
+                                    zipfile.readEntry();
+                                });
+                                readStream.pipe(
+                                    require('fs').createWriteStream(
+                                        config.thumbnail_path +
+                                            files.myFile.name.slice(
+                                                0,
+                                                files.myFile.name.length - 4
+                                            ) +
+                                            '.png'
+                                    )
+                                );
+                                exist_thumbnail = true;
+                            });
+                        } else {
+                            zipfile.readEntry();
+                        }
+                    });
+                    zipfile.once('end', () => {
+                        zipfile.close();
+
+                        if (exist_thumbnail) {
+                            response({ result: true }, res);
+                        } else {
+                            response(
+                                {
+                                    result: false,
+                                    code: -1,
+                                    msg: 'Not exist thumbnail file.',
+                                },
+                                res
+                            );
+                        }
+                    });
+                });
+            }
         });
     });
 }

@@ -1,5 +1,6 @@
 const CONST = require('../common/constants');
 
+/* eslint-disable */
 async function connect() {
     return new Promise((resolve, reject) => {
         mysqlPool
@@ -13,6 +14,7 @@ async function connect() {
             });
     });
 }
+/* eslint-enable */
 
 async function start_transaction(connection) {
     let query = 'START TRANSACTION';
@@ -865,7 +867,7 @@ async function get_market_items(game, category, sort_type, limit, cnt) {
 
     query += ' ' + get_order_by_clause(sort_type) + ' LIMIT ?, ?';
     params.push(limit);
-    params.push(cnt);console.log(query);console.log(params);
+    params.push(cnt);
     let [rows] = await mysql_execute(connection, query, params);
     connection.release();
     return rows;
