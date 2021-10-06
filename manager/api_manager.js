@@ -98,6 +98,22 @@ function register_apis(app) {
             -1
         );
         discussion.likes = likes_count;
+
+        let is_hot = true;
+        let discussions = await database_manager.get_discussion(discussion.stuff_id, 0, 30);
+        for (let i = 0; i < discussions.length; i++) {
+            const likes = await database_manager.get_likes_count(
+                discussions[i].id,
+                -1
+            );
+
+            if (likes > likes_count) {
+                is_hot = false;
+                break;
+            }
+        }
+        discussion.is_hot = is_hot;
+
         if (discussion != null) {
             let comments = await database_manager.get_comment(id);
 
