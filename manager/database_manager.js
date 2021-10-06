@@ -53,6 +53,24 @@ async function get_stuff(stuff_id) {
     }
 }
 
+async function get_discussion_cnt(stuff_id) {
+    let connection = await connect();
+
+    let rows = null;
+
+    if (stuff_id == null || stuff_id == '') {
+        let query = 'SELECT COUNT(tbl_discussion.id) FROM tbl_discussion';
+        [rows] = await mysql_execute(connection, query, []);
+    } else {
+        let query =
+            'SELECT COUNT(tbl_discussion.id) FROM tbl_discussion WHERE stuff_id LIKE ?';
+        [rows] = await mysql_execute(connection, query, [stuff_id]);
+    }
+
+    connection.release();
+    return rows[0].total;
+}
+
 async function get_discussion(stuff_id, limit, cnt) {
     let connection = await connect();
 
@@ -1017,4 +1035,5 @@ module.exports = {
     delete_likes,
     get_likes,
     get_likes_count,
+    get_discussion_cnt,
 };

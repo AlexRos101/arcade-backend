@@ -82,9 +82,13 @@ function register_apis(app) {
             );
             discussions[i].likes = likes_count;
         }
+
+        let total = await database_manager.get_discussion_cnt(id);
+
         let ret = {
             result: true,
             data: discussions,
+            total: total,
         };
 
         response(ret, res);
@@ -101,7 +105,11 @@ function register_apis(app) {
         discussion.likes = likes_count;
 
         let is_hot = true;
-        let discussions = await database_manager.get_discussion(discussion.stuff_id, 0, 30);
+        let discussions = await database_manager.get_discussion(
+            discussion.stuff_id,
+            0,
+            30
+        );
         for (let i = 0; i < discussions.length; i++) {
             const likes = await database_manager.get_likes_count(
                 discussions[i].id,
