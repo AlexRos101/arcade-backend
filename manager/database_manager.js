@@ -59,11 +59,11 @@ async function get_discussion_cnt(stuff_id) {
     let rows = null;
 
     if (stuff_id == null || stuff_id == '') {
-        let query = 'SELECT COUNT(tbl_discussion.id) FROM tbl_discussion';
+        let query = 'SELECT COUNT(id) as total FROM tbl_discussion';
         [rows] = await mysql_execute(connection, query, []);
     } else {
         let query =
-            'SELECT COUNT(tbl_discussion.id) FROM tbl_discussion WHERE stuff_id LIKE ?';
+            'SELECT COUNT(id) as total FROM tbl_discussion WHERE stuff_id LIKE ?';
         [rows] = await mysql_execute(connection, query, [stuff_id]);
     }
 
