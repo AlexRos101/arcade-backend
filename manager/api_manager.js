@@ -82,9 +82,13 @@ function register_apis(app) {
             );
             discussions[i].likes = likes_count;
         }
+
+        let total = await database_manager.get_discussion_cnt(id);
+
         let ret = {
             result: true,
             data: discussions,
+            total: total,
         };
 
         response(ret, res);
