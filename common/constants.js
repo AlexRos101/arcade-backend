@@ -47,6 +47,10 @@ let SORT_TYPE = {
     POPULAR: 4,
 };
 
+let MYSQL_ERR_NO = {
+    CONNECTION_ERROR: -4078,
+};
+
 module.exports = {
     ERC721_FUNCTION_NAME,
     EXCHANGE_FUNCTION_NAME,
@@ -56,4 +60,5 @@ module.exports = {
     TX_TYPE,
     CONTRACT_TYPE,
     SORT_TYPE,
+    MYSQL_ERR_NO,
 };

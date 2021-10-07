@@ -31,105 +31,158 @@ async function rollback_transaction(connection) {
     await connection.query(query);
 }
 
+async function on_connection_err(connection, err, is_roll_back = false) {
+    console.log(err);
+    if (connection == null) return;
+    if (err.errono == CONST.MYSQL_ERR_NO.CONNECTION_ERROR) return;
+    if (is_roll_back) await rollback_transaction(connection);
+    connection.release();
+}
+
 async function get_stuff(stuff_id) {
-    let connection = await connect();
+    let connection = null;
+    try {
+        connection = await connect();
 
-    let rows = null;
+        let rows = null;
 
-    if (stuff_id == null || stuff_id == '') {
-        let query = 'SELECT * from tbl_stuff';
-        [rows] = await mysql_execute(connection, query);
+        if (stuff_id == null || stuff_id == '') {
+            let query = 'SELECT * from tbl_stuff';
+            [rows] = await mysql_execute(connection, query);
+
+            connection.release();
+            return rows;
+        } else {
+            let query = 'SELECT * from tbl_stuff WHERE id LIKE ?';
+            [rows] = await mysql_execute(connection, query, [stuff_id]);
+
+            connection.release();
+            if (rows.length == 0) return null;
+
+            return rows[0];
+        }
+    } catch (err) {
+        on_connection_err(connection, err);
+    }
+
+    return null;
+}
+
+async function get_discussion(stuff_id, limit, cnt) {
+    let connection = null;
+
+    try {
+        connection = await connect();
+
+        let rows = null;
+
+        if (stuff_id == null || stuff_id == '') {
+            let query =
+                'SELECT tbl_discussion.*, COUNT(tbl_comment.id) as comment_cnt FROM tbl_discussion ' +
+                'LEFT JOIN tbl_comment ON tbl_discussion.id = tbl_comment.discussion_id ' +
+                'GROUP BY tbl_discussion.id ORDER BY tbl_discussion.likes DESC LIMIT ?, ?';
+            [rows] = await mysql_execute(connection, query, [limit, cnt]);
+        } else {
+            let query =
+                'SELECT tbl_discussion.*, COUNT(tbl_comment.id) as comment_cnt FROM tbl_discussion ' +
+                'LEFT JOIN tbl_comment ON tbl_discussion.id = tbl_comment.discussion_id ' +
+                'WHERE stuff_id LIKE ? GROUP BY tbl_discussion.id ORDER BY tbl_discussion.likes DESC LIMIT ?, ?';
+            [rows] = await mysql_execute(connection, query, [
+                stuff_id,
+                limit,
+                cnt,
+            ]);
+        }
 
         connection.release();
         return rows;
-    } else {
-        let query = 'SELECT * from tbl_stuff WHERE id LIKE ?';
-        [rows] = await mysql_execute(connection, query, [stuff_id]);
+    } catch (err) {
+        on_connection_err(connection, err);
+    }
+
+    return [];
+}
+
+async function get_discussion_by_keyword(stuff_id, limit, cnt, keyword) {
+    let connection = null;
+
+    try {
+        connection = await connect();
+        let query =
+            'SELECT * from tbl_discussion ' +
+            'WHERE tbl_discussion.content LIKE ? AND tbl_discussion.stuff_id LIKE ?' +
+            ' ORDER BY tbl_discussion.likes DESC LIMIT ?, ?';
+        let [rows] = await mysql_execute(connection, query, [
+            '%' + keyword + '%',
+            stuff_id,
+            limit,
+            cnt,
+        ]);
+
+        connection.release();
+        return rows;
+    } catch (err) {
+        on_connection_err(connection, err);
+    }
+
+    return [];
+}
+
+async function get_discussion_by_id(id) {
+    let connection = null;
+
+    try {
+        connection = await connect();
+
+        let query =
+            'SELECT tbl_discussion.*, COUNT(tbl_comment.id) as comment_cnt from tbl_discussion ' +
+            'LEFT JOIN tbl_comment ON tbl_discussion.id = tbl_comment.discussion_id ' +
+            'WHERE tbl_discussion.id LIKE ? GROUP BY tbl_discussion.id';
+        let [rows] = await mysql_execute(connection, query, [id]);
 
         connection.release();
         if (rows.length == 0) return null;
 
         return rows[0];
-    }
-}
-
-async function get_discussion(stuff_id, limit, cnt) {
-    let connection = await connect();
-
-    let rows = null;
-
-    if (stuff_id == null || stuff_id == '') {
-        let query =
-            'SELECT tbl_discussion.*, COUNT(tbl_comment.id) as comment_cnt FROM tbl_discussion ' +
-            'LEFT JOIN tbl_comment ON tbl_discussion.id = tbl_comment.discussion_id ' +
-            'GROUP BY tbl_discussion.id ORDER BY tbl_discussion.likes DESC LIMIT ?, ?';
-        [rows] = await mysql_execute(connection, query, [limit, cnt]);
-    } else {
-        let query =
-            'SELECT tbl_discussion.*, COUNT(tbl_comment.id) as comment_cnt FROM tbl_discussion ' +
-            'LEFT JOIN tbl_comment ON tbl_discussion.id = tbl_comment.discussion_id ' +
-            'WHERE stuff_id LIKE ? GROUP BY tbl_discussion.id ORDER BY tbl_discussion.likes DESC LIMIT ?, ?';
-        [rows] = await mysql_execute(connection, query, [stuff_id, limit, cnt]);
+    } catch (err) {
+        on_connection_err(connection, err);
     }
 
-    connection.release();
-    return rows;
-}
-
-async function get_discussion_by_keyword(stuff_id, limit, cnt, keyword) {
-    let connection = await connect();
-    let query =
-        'SELECT * from tbl_discussion ' +
-        'WHERE tbl_discussion.content LIKE ? AND tbl_discussion.stuff_id LIKE ?' +
-        ' ORDER BY tbl_discussion.likes DESC LIMIT ?, ?';
-    let [rows] = await mysql_execute(connection, query, [
-        '%' + keyword + '%',
-        stuff_id,
-        limit,
-        cnt,
-    ]);
-
-    connection.release();
-    return rows;
-}
-
-async function get_discussion_by_id(id) {
-    let connection = await connect();
-
-    let query =
-        'SELECT tbl_discussion.*, COUNT(tbl_comment.id) as comment_cnt from tbl_discussion ' +
-        'LEFT JOIN tbl_comment ON tbl_discussion.id = tbl_comment.discussion_id ' +
-        'WHERE tbl_discussion.id LIKE ? GROUP BY tbl_discussion.id';
-    let [rows] = await mysql_execute(connection, query, [id]);
-
-    connection.release();
-    if (rows.length == 0) return null;
-
-    return rows[0];
+    return null;
 }
 
 async function get_comment(discussion_id) {
-    let connection = await connect();
+    let connection = null;
 
-    let rows = null;
+    try {
+        connection = await connect();
 
-    if (discussion_id == null || discussion_id == '') {
-        let query = 'SELECT * from tbl_comment';
-        [rows] = await mysql_execute(connection, query);
-    } else {
-        let query = 'SELECT * from tbl_comment WHERE discussion_id LIKE ?';
-        [rows] = await mysql_execute(connection, query, [discussion_id]);
+        let rows = null;
+
+        if (discussion_id == null || discussion_id == '') {
+            let query = 'SELECT * from tbl_comment';
+            [rows] = await mysql_execute(connection, query);
+        } else {
+            let query = 'SELECT * from tbl_comment WHERE discussion_id LIKE ?';
+            [rows] = await mysql_execute(connection, query, [discussion_id]);
+        }
+
+        connection.release();
+        return rows;
+    } catch (err) {
+        on_connection_err(err);
     }
 
-    connection.release();
-    return rows;
+    return [];
 }
 
 async function add_discussion(stuff_id, content, user_type, user) {
-    let connection = await connect();
+    let connection = null;
     let ret = false;
 
     try {
+        connection = await connect();
+
         await start_transaction(connection);
 
         let query =
@@ -144,20 +197,21 @@ async function add_discussion(stuff_id, content, user_type, user) {
 
         await commit_transaction(connection);
         ret = rows.insertId > 0;
+        connection.release();
     } catch (err) {
-        console.log(err);
-        await rollback_transaction(connection);
+        await on_connection_err(connection, err, true);
     }
 
-    connection.release();
     return ret;
 }
 
 async function add_comment(discussion_id, parent_id, content, user_type, user) {
-    let connection = await connect();
+    let connection = null;
     let ret = false;
 
     try {
+        connection = await connect();
+
         await start_transaction(connection);
 
         let query =
@@ -174,12 +228,11 @@ async function add_comment(discussion_id, parent_id, content, user_type, user) {
 
         await commit_transaction(connection);
         ret = rows.insertId > 0;
+        connection.release();
     } catch (err) {
-        console.log(err);
-        await rollback_transaction(connection);
+        await on_connection_err(connection, err, true);
     }
 
-    connection.release();
     return ret;
 }
 
@@ -255,10 +308,12 @@ async function update_sync_block_number(
 }
 
 async function mint_token(item, block_number) {
-    let connection = await connect();
+    let connection = null;
     let ret = false;
 
     try {
+        connection = await connect();
+
         await start_transaction(connection);
 
         let token_id = await add_token(connection, item);
@@ -281,46 +336,49 @@ async function mint_token(item, block_number) {
         await commit_transaction(connection);
 
         ret = true;
+
+        connection.release();
     } catch (err) {
-        console.log(err);
-        await rollback_transaction(connection);
+        await on_connection_err(connection, err, true);
     }
 
-    connection.release();
     return ret;
 }
 
 async function get_sync_block_number(contract_type) {
-    let connection = await connect();
     let ret = -1;
+    let connection = null;
 
     try {
+        connection = await connect();
         let query =
             'SELECT block_number FROM tbl_status WHERE contract_type = ?';
         let [rows] = await mysql_execute(connection, query, [contract_type]);
         ret = rows[0].block_number;
+        connection.release();
     } catch (err) {
-        console.log(err);
+        on_connection_err(connection, err);
     }
-
-    connection.release();
 
     return ret;
 }
 
 async function get_token_by_id(id) {
-    let connection = await connect();
+    let connection = null;
     let ret = null;
 
     try {
+        connection = await connect();
+
         let query = 'SELECT * from tbl_item WHERE id = ?';
         let [rows] = await mysql_execute(connection, query, [id]);
         if (rows.length > 0) ret = rows[0];
+
+        connection.release();
     } catch (err) {
-        console.log(err);
+        on_connection_err(connection, err);
     }
 
-    connection.release();
     return ret;
 }
 
@@ -333,10 +391,12 @@ async function update_token_by_id(
     is_anonymous,
     price
 ) {
-    let connection = await connect();
+    let connection = null;
     let ret = null;
 
     try {
+        connection = await connect();
+
         let query =
             'UPDATE tbl_item SET game_id=?, category_id=?, name=?, description=?, is_anonymous=?, arcadedoge_price=? WHERE tbl_item.id LIKE ?';
         let [rows] = await mysql_execute(connection, query, [
@@ -349,35 +409,40 @@ async function update_token_by_id(
             id,
         ]);
         ret = rows.affectedRows > 0;
+
+        connection.release();
     } catch (err) {
-        console.log(err);
+        on_connection_err(connection, err);
     }
 
-    connection.release();
     return ret;
 }
 
 async function get_token_by_tokenid(token_id) {
-    let connection = await connect();
+    let connection = null;
     let ret = null;
 
     try {
+        connection = await connect();
+
         let query = 'SELECT * from tbl_item WHERE token_id = ?';
         let [rows] = await mysql_execute(connection, query, [token_id]);
         if (rows.length > 0) ret = rows[0];
+        connection.release();
     } catch (err) {
-        console.log(err);
+        on_connection_err(connection, err);
     }
 
-    connection.release();
     return ret;
 }
 
 async function get_token_by_contract_info(contract_address, token_id) {
-    let connection = await connect();
+    let connection = null;
     let ret = null;
 
     try {
+        connection = await connect();
+
         let query =
             'SELECT * from tbl_item ' +
             'WHERE contract_address = ? AND token_id = ?';
@@ -386,11 +451,12 @@ async function get_token_by_contract_info(contract_address, token_id) {
             token_id,
         ]);
         if (rows.length > 0) ret = rows[0];
+
+        connection.release();
     } catch (err) {
-        console.log(err);
+        on_connection_err(connection, err);
     }
 
-    connection.release();
     return ret;
 }
 
@@ -433,10 +499,12 @@ async function add_burn_tx(connection, item) {
 }
 
 async function burn_token(contract_address, token_id, block_number) {
-    let connection = await connect();
+    let connection = null;
     let ret = false;
 
     try {
+        connection = await connect();
+
         await start_transaction(connection);
 
         let token = await get_token_by_contract_info(
@@ -465,12 +533,12 @@ async function burn_token(contract_address, token_id, block_number) {
 
         await commit_transaction(connection);
         ret = true;
+
+        connection.release();
     } catch (err) {
-        console.log(err);
-        await rollback_transaction(connection);
+        await on_connection_err(connection, err, true);
     }
 
-    connection.release();
     return ret;
 }
 
@@ -511,10 +579,12 @@ async function sell_token(
     arcadedoge_price,
     block_number
 ) {
-    let connection = await connect();
+    let connection = null;
     let ret = false;
 
     try {
+        connection = await connect();
+
         await start_transaction(connection);
 
         let token = await get_token_by_contract_info(
@@ -546,20 +616,22 @@ async function sell_token(
 
         await commit_transaction(connection);
         ret = true;
+
+        connection.release();
     } catch (err) {
-        console.log(err);
-        await rollback_transaction(connection);
+        await on_connection_err(connection, err, true);
     }
 
-    connection.release();
     return ret;
 }
 
 async function cancel_sell_token(contract_address, token_id, block_number) {
-    let connection = await connect();
+    let connection = null;
     let ret = false;
 
     try {
+        connection = await connect();
+
         await start_transaction(connection);
 
         let token = await get_token_by_contract_info(
@@ -590,12 +662,12 @@ async function cancel_sell_token(contract_address, token_id, block_number) {
 
         await commit_transaction(connection);
         ret = true;
+
+        connection.release();
     } catch (err) {
-        console.log(err);
-        await rollback_transaction(connection);
+        await on_connection_err(connection, err, true);
     }
 
-    connection.release();
     return ret;
 }
 
@@ -683,10 +755,12 @@ async function exchange_token(
     buyer,
     block_number
 ) {
-    let connection = await connect();
+    let connection = null;
     let ret = false;
 
     try {
+        connection = await connect();
+
         await start_transaction(connection);
 
         let token = await get_token_by_contract_info(
@@ -727,12 +801,12 @@ async function exchange_token(
         }
         await commit_transaction(connection);
         ret = true;
+
+        connection.release();
     } catch (err) {
-        console.log(err);
-        await rollback_transaction(connection);
+        await on_connection_err(connection, err, true);
     }
 
-    connection.release();
     return ret;
 }
 
@@ -743,10 +817,12 @@ async function transfer_token(
     to,
     block_number
 ) {
-    let connection = await connect();
+    let connection = null;
     let ret = false;
 
     try {
+        connection = await connect();
+
         await start_transaction(connection);
 
         let token = await get_token_by_contract_info(
@@ -775,20 +851,22 @@ async function transfer_token(
 
         await commit_transaction(connection);
         ret = true;
+
+        connection.release();
     } catch (err) {
-        console.log(err);
-        await rollback_transaction(connection);
+        await on_connection_err(connection, err, true);
     }
 
-    connection.release();
     return ret;
 }
 
 async function update_other_sync_block_number(contract_type, block_number) {
-    let connection = await connect();
+    let connection = null;
     let ret = false;
 
     try {
+        connection = await connect();
+
         await start_transaction(connection);
 
         ret = await update_sync_block_number(
@@ -798,109 +876,163 @@ async function update_other_sync_block_number(contract_type, block_number) {
         );
 
         await commit_transaction(connection);
+
+        connection.release();
     } catch (err) {
-        console.log(err);
-        await rollback_transaction(connection);
+        await on_connection_err(connection, err, true);
     }
 
-    connection.release();
     return ret;
 }
 
 async function get_games() {
-    let connection = await connect();
-    let query = 'SELECT * FROM tbl_game';
-    let [rows] = await mysql_execute(connection, query);
-    connection.release();
-    return rows;
+    let connection = null;
+
+    try {
+        connection = await connect();
+        let query = 'SELECT * FROM tbl_game';
+        let [rows] = await mysql_execute(connection, query);
+        connection.release();
+        return rows;
+    } catch (err) {
+        on_connection_err(connection, err);
+    }
+
+    return [];
 }
 
 async function get_categories() {
-    let connection = await connect();
-    let query = 'SELECT * from tbl_category';
-    let [rows] = await mysql_execute(connection, query);
-    connection.release();
-    return rows;
+    let connection = null;
+
+    try {
+        connection = await connect();
+        let query = 'SELECT * from tbl_category';
+        let [rows] = await mysql_execute(connection, query);
+        connection.release();
+        return rows;
+    } catch (err) {
+        on_connection_err(connection, err);
+    }
+
+    return [];
 }
 
 async function get_items_by_address(address, sort_type, limit, cnt) {
-    let connection = await connect();
-    let query =
-        'SELECT tbl_item.*, tbl_category.name as category_name from tbl_item ' +
-        'LEFT JOIN tbl_category ON tbl_item.category_id = tbl_category.id ' +
-        'WHERE is_burnt = 0 AND owner = ? ' +
-        get_order_by_clause(sort_type) +
-        ' LIMIT ?, ?';
-    let [rows] = await mysql_execute(connection, query, [address, limit, cnt]);
-    connection.release();
-    return rows;
+    let connection = null;
+
+    try {
+        connection = await connect();
+        let query =
+            'SELECT tbl_item.*, tbl_category.name as category_name from tbl_item ' +
+            'LEFT JOIN tbl_category ON tbl_item.category_id = tbl_category.id ' +
+            'WHERE is_burnt = 0 AND owner = ? ' +
+            get_order_by_clause(sort_type) +
+            ' LIMIT ?, ?';
+        let [rows] = await mysql_execute(connection, query, [
+            address,
+            limit,
+            cnt,
+        ]);
+        connection.release();
+        return rows;
+    } catch (err) {
+        on_connection_err(connection, err);
+    }
+
+    return [];
 }
 
 async function get_items_by_address_cnt(address) {
-    let connection = await connect();
-    let query =
-        'SELECT COUNT(id) as total from tbl_item ' +
-        'WHERE is_burnt = 0 AND owner = ?';
-    let [rows] = await mysql_execute(connection, query, [address]);
-    connection.release();
-    return rows[0].total;
+    let connection = null;
+
+    try {
+        connection = await connect();
+        let query =
+            'SELECT COUNT(id) as total from tbl_item ' +
+            'WHERE is_burnt = 0 AND owner = ?';
+        let [rows] = await mysql_execute(connection, query, [address]);
+        connection.release();
+        return rows[0].total;
+    } catch (err) {
+        on_connection_err(connection, err);
+    }
+
+    return 0;
 }
 
 async function get_market_items(game, category, sort_type, limit, cnt) {
-    let connection = await connect();
+    let connection = null;
 
-    let query =
-        'SELECT tbl_item.*, tbl_category.name as category_name from tbl_item ' +
-        'LEFT JOIN tbl_category ON tbl_item.category_id = tbl_category.id ' +
-        'WHERE is_visible = ? AND is_burnt = 0';
-    let params = [CONST.VISIBILITY_STATUS.SHOW];
+    try {
+        connection = await connect();
 
-    if (game != 0) {
-        query += ' AND tbl_item.game_id = ?';
-        params.push(game);
+        let query =
+            'SELECT tbl_item.*, tbl_category.name as category_name from tbl_item ' +
+            'LEFT JOIN tbl_category ON tbl_item.category_id = tbl_category.id ' +
+            'WHERE is_visible = ? AND is_burnt = 0';
+        let params = [CONST.VISIBILITY_STATUS.SHOW];
+
+        if (game != 0) {
+            query += ' AND tbl_item.game_id = ?';
+            params.push(game);
+        }
+
+        if (category != 0) {
+            query += ' AND category_id = ?';
+            params.push(category);
+        }
+
+        query += ' ' + get_order_by_clause(sort_type) + ' LIMIT ?, ?';
+        params.push(limit);
+        params.push(cnt);
+        let [rows] = await mysql_execute(connection, query, params);
+        connection.release();
+        return rows;
+    } catch (err) {
+        on_connection_err(connection, err);
     }
 
-    if (category != 0) {
-        query += ' AND category_id = ?';
-        params.push(category);
-    }
-
-    query += ' ' + get_order_by_clause(sort_type) + ' LIMIT ?, ?';
-    params.push(limit);
-    params.push(cnt);
-    let [rows] = await mysql_execute(connection, query, params);
-    connection.release();
-    return rows;
+    return [];
 }
 
 async function get_market_items_cnt(game, category) {
-    let connection = await connect();
+    let connection = null;
 
-    let query =
-        'SELECT COUNT(id) as total from tbl_item ' +
-        'WHERE is_visible = ? AND is_burnt = 0';
-    let params = [CONST.VISIBILITY_STATUS.SHOW];
+    try {
+        connection = await connect();
 
-    if (game != 0) {
-        query += ' AND tbl_item.game_id = ?';
-        params.push(game);
+        let query =
+            'SELECT COUNT(id) as total from tbl_item ' +
+            'WHERE is_visible = ? AND is_burnt = 0';
+        let params = [CONST.VISIBILITY_STATUS.SHOW];
+
+        if (game != 0) {
+            query += ' AND tbl_item.game_id = ?';
+            params.push(game);
+        }
+
+        if (category != 0) {
+            query += ' AND category_id = ?';
+            params.push(category);
+        }
+
+        let [rows] = await mysql_execute(connection, query, params);
+        connection.release();
+        return rows[0].total;
+    } catch (err) {
+        on_connection_err(connection, err);
     }
 
-    if (category != 0) {
-        query += ' AND category_id = ?';
-        params.push(category);
-    }
-
-    let [rows] = await mysql_execute(connection, query, params);
-    connection.release();
-    return rows[0].total;
+    return 0;
 }
 
 async function insert_likes(discussion_id, parent_id, user) {
-    let connection = await connect();
+    let connection = null;
     let ret = false;
 
     try {
+        connection = await connect();
+
         let query =
             'INSERT INTO tbl_likes ' +
             '(discussion_id, parent_id, user) VALUE(?, ?, ?)';
@@ -910,17 +1042,22 @@ async function insert_likes(discussion_id, parent_id, user) {
             user,
         ]);
         ret = rows.insertId > 0;
+
+        connection.release();
     } catch (err) {
-        console.log(err);
+        on_connection_err(connection, err);
     }
+
     return ret;
 }
 
 async function delete_likes(discussion_id, parent_id, user) {
-    let connection = await connect();
+    let connection = null;
     let ret = false;
 
     try {
+        connection = await connect();
+
         let query =
             'DELETE FROM tbl_likes ' +
             'WHERE discussion_id LIKE ? AND parent_id LIKE ? AND user LIKE ?';
@@ -930,38 +1067,56 @@ async function delete_likes(discussion_id, parent_id, user) {
             user,
         ]);
         ret = rows.affectedRows > 0;
+
+        connection.release();
     } catch (err) {
-        console.log(err);
+        on_connection_err(connection, err);
     }
 
     return ret;
 }
 
 async function get_likes(discussion_id, parent_id, user) {
-    let connection = await connect();
-    let query =
-        'SELECT id from tbl_likes ' +
-        'WHERE discussion_id LIKE ? AND parent_id LIKE ? AND user LIKE ?';
-    let [rows] = await mysql_execute(connection, query, [
-        discussion_id,
-        parent_id,
-        user,
-    ]);
-    connection.release();
-    return rows;
+    let connection = null;
+
+    try {
+        connection = await connect();
+        let query =
+            'SELECT id from tbl_likes ' +
+            'WHERE discussion_id LIKE ? AND parent_id LIKE ? AND user LIKE ?';
+        let [rows] = await mysql_execute(connection, query, [
+            discussion_id,
+            parent_id,
+            user,
+        ]);
+        connection.release();
+        return rows;
+    } catch (err) {
+        on_connection_err(connection, err);
+    }
+
+    return [];
 }
 
 async function get_likes_count(discussion_id, parent_id) {
-    let connection = await connect();
-    let query =
-        'SELECT COUNT(id) as total from tbl_likes ' +
-        'WHERE discussion_id LIKE ? AND parent_id LIKE ?';
-    let [rows] = await mysql_execute(connection, query, [
-        discussion_id,
-        parent_id,
-    ]);
-    connection.release();
-    return rows[0].total;
+    let connection = null;
+
+    try {
+        connection = await connect();
+        let query =
+            'SELECT COUNT(id) as total from tbl_likes ' +
+            'WHERE discussion_id LIKE ? AND parent_id LIKE ?';
+        let [rows] = await mysql_execute(connection, query, [
+            discussion_id,
+            parent_id,
+        ]);
+        connection.release();
+        return rows[0].total;
+    } catch (err) {
+        on_connection_err(connection, err);
+    }
+
+    return 0;
 }
 
 function get_order_by_clause(sort_type) {
