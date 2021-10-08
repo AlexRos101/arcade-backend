@@ -169,6 +169,26 @@ async function get_discussion_by_id(id) {
     return null;
 }
 
+async function get_comment_by_id(id) {
+    let connection = null;
+
+    try {
+        connection = await connect();
+
+        let query = 'SELECT * FROM tbl_comment WHERE id LIKE ?';
+        let [rows] = await mysql_execute(connection, query, [id]);
+
+        connection.release();
+        if (rows.length == 0) return null;
+
+        return rows[0];
+    } catch (err) {
+        on_connection_err(connection, err);
+    }
+
+    return null;
+}
+
 async function get_comment(discussion_id) {
     let connection = null;
 
@@ -1191,4 +1211,5 @@ module.exports = {
     get_likes,
     get_likes_count,
     get_discussion_cnt,
+    get_comment_by_id,
 };

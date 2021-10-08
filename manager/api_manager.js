@@ -13,7 +13,7 @@ function register_apis(app) {
             let discussions = await database_manager.get_discussion(
                 stuff.id,
                 0,
-                3
+                5
             );
             for (let j = 0; j < discussions.length; j++) {
                 let likes_count = await database_manager.get_likes_count(
@@ -96,6 +96,10 @@ function register_apis(app) {
 
     app.post('/discussion', async (req, res) => {
         let id = req.fields.id;
+        let account = req.fields.account;
+        let limit = req.fields.limit;
+        let cnt = req.fields.cnt;
+        let total = 0;
 
         let discussion = await database_manager.get_discussion_by_id(id);
         const likes_count = await database_manager.get_likes_count(
@@ -133,6 +137,14 @@ function register_apis(app) {
                 );
                 comments[i].likes = likes_count;
 
+                if (account != '' && account != undefined) {
+                    comments[i].user_like = await database_manager.get_likes(
+                        comments[i].discussion_id,
+                        comments[i].id,
+                        account
+                    );
+                }
+
                 let comment = comments[i];
                 if (comment.parent_id == -1) {
                     continue;
@@ -148,13 +160,14 @@ function register_apis(app) {
                 }
                 comments.splice(i, 1);
             }
-
-            discussion.comments = comments;
+            total = comments.length
+            discussion.comments = comments.slice(limit, limit + cnt);
         }
 
         let ret = {
             result: true,
             data: discussion,
+            total: total
         };
 
         response(ret, res);
@@ -184,6 +197,25 @@ function register_apis(app) {
             user_type,
             user
         );
+
+        let ret = {
+            result: true,
+            data: result,
+        };
+
+        response(ret, res);
+    });
+
+    app.post('/comment', async (req, res) => {
+        let id = req.fields.id;
+
+        let result = await database_manager.get_comment_by_id(id);
+
+        const likes_count = await database_manager.get_likes_count(
+            result.discussion_id,
+            result.id
+        );
+        result.likes = likes_count;
 
         let ret = {
             result: true,
