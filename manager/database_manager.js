@@ -436,7 +436,7 @@ async function update_token_by_id(
         connection = await connect();
 
         let query =
-            'UPDATE tbl_item SET game_id=?, category_id=?, name=?, description=?, is_anonymous=?, arcadedoge_price=? WHERE tbl_item.id LIKE ?';
+            'UPDATE tbl_item SET game_id=?, category_id=?, name=?, description=?, is_anonymous=?, arcadedoge_price=? WHERE id = ?';
         let [rows] = await mysql_execute(connection, query, [
             game_id,
             category_id,

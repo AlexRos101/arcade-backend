@@ -1,7 +1,7 @@
 const config = {
     port_number: 4000,
 
-    contract_exchange: '0x2b02690Cdc6442A2A6c04C52659B9e996C85eAe3',
+    contract_exchange: '0x618f28978CFcFcC3ED3c61E1572BD7d547a96718',
     contract_nft: '0x2BE5E405dD3a74e293eBa1cbbc9a8577fd2257B6',
 
     material_path: '/var/www/html/arcadedoge/materials/',

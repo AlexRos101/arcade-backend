@@ -8,16 +8,8 @@
     "start": "node index.js",
     "lint": "eslint . --ext .js --fix"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/CaribNFTFI/Backend.git"
-  },
   "author": "AlexRos",
   "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/CaribNFTFI/Backend/issues"
-  },
-  "homepage": "https://github.com/CaribNFTFI/Backend#readme",
   "dependencies": {
     "abi-decoder": "^2.4.0",
     "async": "^3.2.1",
