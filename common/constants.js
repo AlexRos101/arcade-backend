@@ -1,33 +1,33 @@
-let ERC721_FUNCTION_NAME = {
+const ERC721_FUNCTION_NAME = {
     MINT: 'mint',
     BURN: 'burn',
     SAFE_TRANSFER_FROM: 'safeTransferFrom',
     TRANSFER_FROM: 'transferFrom',
 };
 
-let EXCHANGE_FUNCTION_NAME = {
+const EXCHANGE_FUNCTION_NAME = {
     SELL_REQUEST: 'SellRequest',
     CANCEL_SELL_REQUEST: 'CancelSellRequest',
     EXCHANGE: 'exchange',
     EXCHANGE_BUSD: 'exchangeBUSD',
 };
 
-let ANONYMOUS_TYPE = {
+const ANONYMOUS_TYPE = {
     NONE: 0,
     ANONYMOUS: 1,
 };
 
-let VISIBILITY_STATUS = {
+const VISIBILITY_STATUS = {
     HIDDEN: 0,
     SHOW: 1,
 };
 
-let BURN_STATUS = {
+const BURN_STATUS = {
     NONE: 0,
     BURNT: 1,
 };
 
-let TX_TYPE = {
+const TX_TYPE = {
     NONE: 0,
     MINT: 1,
     EXCHANGE: 2,
@@ -35,19 +35,19 @@ let TX_TYPE = {
     TRANSFER: 4,
 };
 
-let CONTRACT_TYPE = {
+const CONTRACT_TYPE = {
     NFT: 1,
     EXCHANGE: 2,
 };
 
-let SORT_TYPE = {
+const SORT_TYPE = {
     RECENT: 1,
     PRICE_HIGH_LOW: 2,
     PRICE_LOW_HIGH: 3,
     POPULAR: 4,
 };
 
-let MYSQL_ERR_NO = {
+const MYSQL_ERR_NO = {
     CONNECTION_ERROR: -4078,
 };
 

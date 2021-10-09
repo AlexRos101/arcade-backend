@@ -1,4 +1,4 @@
-let mysql_config = {
+const mysql_config = {
     host: 'localhost',
     user: 'root',
     password: '',
