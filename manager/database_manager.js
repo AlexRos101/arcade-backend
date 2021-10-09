@@ -265,7 +265,7 @@ async function add_comment(discussion_id, parent_id, content, user_type, user) {
         ]);
 
         await commit_transaction(connection);
-        ret = rows.insertId > 0;
+        ret = rows.insertId;
         connection.release();
     } catch (err) {
         await on_connection_err(connection, err, true);
