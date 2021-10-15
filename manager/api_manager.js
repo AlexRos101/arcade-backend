@@ -9,14 +9,14 @@ function register_apis(app) {
         let stuffs = await database_manager.get_stuff(null);
 
         for (let i = 0; i < stuffs.length; i++) {
-            let stuff = stuffs[i];
-            let discussions = await database_manager.get_discussion(
+            const stuff = stuffs[i];
+            const discussions = await database_manager.get_discussion(
                 stuff.id,
                 0,
                 5
             );
             for (let j = 0; j < discussions.length; j++) {
-                let likes_count = await database_manager.get_likes_count(
+                const likes_count = await database_manager.get_likes_count(
                     discussions[j].id,
                     -1
                 );
@@ -25,7 +25,7 @@ function register_apis(app) {
             stuffs[i].discussions = discussions;
         }
 
-        let ret = {
+        const ret = {
             result: true,
             data: stuffs,
         };
@@ -34,12 +34,12 @@ function register_apis(app) {
     });
 
     app.post('/stuff/search', async (req, res) => {
-        let keyword = req.fields.keyword;
+        const keyword = req.fields.keyword;
         let stuffs = await database_manager.get_stuff(null);
 
         for (let i = 0; i < stuffs.length; i++) {
-            let stuff = stuffs[i];
-            let discussions = await database_manager.get_discussion_by_keyword(
+            const stuff = stuffs[i];
+            const discussions = await database_manager.get_discussion_by_keyword(
                 stuff.id,
                 0,
                 3,
@@ -48,7 +48,7 @@ function register_apis(app) {
             stuffs[i].discussions = discussions;
         }
 
-        let ret = {
+        const ret = {
             result: true,
             data: stuffs,
         };
@@ -57,11 +57,11 @@ function register_apis(app) {
     });
 
     app.post('/stuff', async (req, res) => {
-        let id = req.fields.id;
+        const id = req.fields.id;
 
-        let stuff = await database_manager.get_stuff(id);
+        const stuff = await database_manager.get_stuff(id);
 
-        let ret = {
+        const ret = {
             result: true,
             data: stuff,
         };
@@ -70,9 +70,9 @@ function register_apis(app) {
     });
 
     app.post('/discussion/all/', async (req, res) => {
-        let id = req.fields.id;
-        let limit = req.fields.limit;
-        let cnt = req.fields.cnt;
+        const id = req.fields.id;
+        const limit = req.fields.limit;
+        const cnt = req.fields.cnt;
 
         let discussions = await database_manager.get_discussion(id, limit, cnt);
         for (let i = 0; i < discussions.length; i++) {
@@ -83,9 +83,9 @@ function register_apis(app) {
             discussions[i].likes = likes_count;
         }
 
-        let total = await database_manager.get_discussion_cnt(id);
+        const total = await database_manager.get_discussion_cnt(id);
 
-        let ret = {
+        const ret = {
             result: true,
             data: discussions,
             total: total,
@@ -95,10 +95,10 @@ function register_apis(app) {
     });
 
     app.post('/discussion', async (req, res) => {
-        let id = req.fields.id;
-        let account = req.fields.account;
-        let limit = req.fields.limit;
-        let cnt = req.fields.cnt;
+        const id = req.fields.id;
+        const account = req.fields.account;
+        const limit = req.fields.limit;
+        const cnt = req.fields.cnt;
         let total = 0;
 
         let discussion = await database_manager.get_discussion_by_id(id);
@@ -109,7 +109,7 @@ function register_apis(app) {
         discussion.likes = likes_count;
 
         let is_hot = true;
-        let discussions = await database_manager.get_discussion(
+        const discussions = await database_manager.get_discussion(
             discussion.stuff_id,
             0,
             30
@@ -145,7 +145,7 @@ function register_apis(app) {
                     );
                 }
 
-                let comment = comments[i];
+                const comment = comments[i];
                 if (comment.parent_id == -1) {
                     continue;
                 }
@@ -160,24 +160,24 @@ function register_apis(app) {
                 }
                 comments.splice(i, 1);
             }
-            total = comments.length
+            total = comments.length;
             discussion.comments = comments.slice(limit, limit + cnt);
         }
 
-        let ret = {
+        const ret = {
             result: true,
             data: discussion,
-            total: total
+            total: total,
         };
 
         response(ret, res);
     });
 
     app.post('/discussion/new', async (req, res) => {
-        let stuff_id = req.fields.stuff_id;
-        let content = req.fields.content;
-        let user_type = req.fields.user_type;
-        let user = req.fields.user;
+        const stuff_id = req.fields.stuff_id;
+        const content = req.fields.content;
+        const user_type = req.fields.user_type;
+        const user = req.fields.user;
 
         if (
             !isValidDiscussionParams({
@@ -191,14 +191,14 @@ function register_apis(app) {
             return;
         }
 
-        let result = await database_manager.add_discussion(
+        const result = await database_manager.add_discussion(
             stuff_id,
             content,
             user_type,
             user
         );
 
-        let ret = {
+        const ret = {
             result: true,
             data: result,
         };
@@ -207,7 +207,7 @@ function register_apis(app) {
     });
 
     app.post('/comment', async (req, res) => {
-        let id = req.fields.id;
+        const id = req.fields.id;
 
         let result = await database_manager.get_comment_by_id(id);
 
@@ -217,7 +217,7 @@ function register_apis(app) {
         );
         result.likes = likes_count;
 
-        let ret = {
+        const ret = {
             result: true,
             data: result,
         };
@@ -226,11 +226,11 @@ function register_apis(app) {
     });
 
     app.post('/comment/new', async (req, res) => {
-        let discussion_id = req.fields.discussion_id;
-        let parent_id = req.fields.parent_id;
-        let content = req.fields.content;
-        let user_type = req.fields.user_type;
-        let user = req.fields.user;
+        const discussion_id = req.fields.discussion_id;
+        const parent_id = req.fields.parent_id;
+        const content = req.fields.content;
+        const user_type = req.fields.user_type;
+        const user = req.fields.user;
 
         if (
             !isValidCommentParams({
@@ -245,7 +245,7 @@ function register_apis(app) {
             return;
         }
 
-        let result = await database_manager.add_comment(
+        const result = await database_manager.add_comment(
             discussion_id,
             parent_id,
             content,
@@ -253,7 +253,7 @@ function register_apis(app) {
             user
         );
 
-        let ret = {
+        const ret = {
             result: true,
             data: result,
         };
@@ -262,9 +262,9 @@ function register_apis(app) {
     });
 
     app.post('/get_games', async (req, res) => {
-        let result = await database_manager.get_games();
+        const result = await database_manager.get_games();
 
-        let ret = {
+        const ret = {
             result: true,
             data: result,
         };
@@ -292,7 +292,7 @@ function register_apis(app) {
             );
         }
 
-        let ret = {
+        const ret = {
             result: true,
             data: result,
         };
@@ -305,13 +305,13 @@ function register_apis(app) {
         const parent_id = req.fields.parent_id;
         const user = req.fields.user;
 
-        let result = await database_manager.get_likes(
+        const result = await database_manager.get_likes(
             discussion_id,
             parent_id,
             user
         );
 
-        let ret = {
+        const ret = {
             result: true,
             data: result,
         };
@@ -320,9 +320,9 @@ function register_apis(app) {
     });
 
     app.post('/get_categories', async (req, res) => {
-        let result = await database_manager.get_categories();
+        const result = await database_manager.get_categories();
 
-        let ret = {
+        const ret = {
             result: true,
             data: result,
         };
@@ -331,10 +331,10 @@ function register_apis(app) {
     });
 
     app.post('/get_items_by_address', async (req, res) => {
-        let address = req.fields.address;
-        let sort_type = req.fields.sort;
-        let limit = req.fields.limit;
-        let cnt = req.fields.cnt;
+        const address = req.fields.address;
+        const sort_type = req.fields.sort;
+        const limit = req.fields.limit;
+        const cnt = req.fields.cnt;
 
         if (
             address == null ||
@@ -347,15 +347,15 @@ function register_apis(app) {
             return;
         }
 
-        let result = await database_manager.get_items_by_address(
+        const result = await database_manager.get_items_by_address(
             address,
             sort_type,
             limit,
             cnt
         );
-        let total = await database_manager.get_items_by_address_cnt(address);
+        const total = await database_manager.get_items_by_address_cnt(address);
 
-        let ret = {
+        const ret = {
             result: true,
             data: result,
             total: total,
@@ -365,11 +365,11 @@ function register_apis(app) {
     });
 
     app.post('/get_market_items', async (req, res) => {
-        let game = req.fields.game;
-        let category = req.fields.category;
-        let sort_type = req.fields.sort;
-        let limit = req.fields.limit;
-        let cnt = req.fields.cnt;
+        const game = req.fields.game;
+        const category = req.fields.category;
+        const sort_type = req.fields.sort;
+        const limit = req.fields.limit;
+        const cnt = req.fields.cnt;
 
         if (
             game == null ||
@@ -382,15 +382,15 @@ function register_apis(app) {
             return;
         }
 
-        let result = await database_manager.get_market_items(
+        const result = await database_manager.get_market_items(
             game,
             category,
             sort_type,
             limit,
             cnt
         );
-        let total = await database_manager.get_market_items_cnt(game, category);
-        let ret = {
+        const total = await database_manager.get_market_items_cnt(game, category);
+        const ret = {
             result: true,
             data: result,
             total: total,
@@ -400,16 +400,16 @@ function register_apis(app) {
     });
 
     app.post('/get_item_by_id', async (req, res) => {
-        let id = req.fields.id;
+        const id = req.fields.id;
 
         if (id == null) {
             response_invalid(res);
             return;
         }
 
-        let result = await database_manager.get_token_by_id(id);
+        const result = await database_manager.get_token_by_id(id);
 
-        let ret = {
+        const ret = {
             result: result != null,
             data: result,
         };
@@ -418,20 +418,20 @@ function register_apis(app) {
     });
 
     app.post('/update_item_by_id', async (req, res) => {
-        let id = req.fields.id;
-        let game_id = req.fields.game_id;
-        let category_id = req.fields.category_id;
-        let name = req.fields.name;
-        let is_anonymous = req.fields.is_anonymous;
-        let description = req.fields.description;
-        let price = req.fields.price;
+        const id = req.fields.id;
+        const game_id = req.fields.game_id;
+        const category_id = req.fields.category_id;
+        const name = req.fields.name;
+        const is_anonymous = req.fields.is_anonymous;
+        const description = req.fields.description;
+        const price = req.fields.price;
 
         if (id == null) {
             response_invalid(res);
             return;
         }
 
-        let result = await database_manager.update_token_by_id(
+        const result = await database_manager.update_token_by_id(
             id,
             game_id,
             category_id,
@@ -441,7 +441,7 @@ function register_apis(app) {
             price
         );
 
-        let ret = {
+        const ret = {
             result: result != null,
             data: result,
         };
@@ -450,16 +450,16 @@ function register_apis(app) {
     });
 
     app.post('/get_item_by_tokenid', async (req, res) => {
-        let id = req.fields.token_id;
+        const id = req.fields.token_id;
 
         if (id == null) {
             response_invalid(res);
             return;
         }
 
-        let result = await database_manager.get_token_by_tokenid(id);
+        const result = await database_manager.get_token_by_tokenid(id);
 
-        let ret = {
+        const ret = {
             result: result != null,
             data: result,
         };
@@ -468,7 +468,7 @@ function register_apis(app) {
     });
 
     app.post('/upload_material', async (req, res) => {
-        let files = req.files;
+        const files = req.files;
         if (files.myFile == null) {
             response({ result: false }, res);
             return;
@@ -488,8 +488,8 @@ function register_apis(app) {
             return;
         }
 
-        let oldpath = files.myFile.path;
-        let newpath = config.material_path + files.myFile.name;
+        const oldpath = files.myFile.path;
+        const newpath = config.material_path + files.myFile.name;
         mv(oldpath, newpath, async function (err) {
             if (err) {
                 console.log(err);
@@ -498,14 +498,14 @@ function register_apis(app) {
             }
 
             if (newpath.slice(newpath.length - 4, newpath.length) == '.rar') {
-                let archive = new Unrar(newpath);
+                const archive = new Unrar(newpath);
 
                 archive.list(function (err, entries) {
                     for (let i = 0; i < entries.length; i++) {
-                        let name = entries[i].name;
-                        let type = entries[i].type;
+                        const name = entries[i].name;
+                        const type = entries[i].type;
                         if (type == 'File' && name == 'thumbnail.png') {
-                            let stream = archive.stream('thumbnail.png'); // name of entry
+                            const stream = archive.stream('thumbnail.png'); // name of entry
                             stream.on('error', () => {
                                 response({ result: false });
                             });
@@ -603,7 +603,7 @@ function response(ret, res) {
 }
 
 function response_invalid(res) {
-    let ret = {
+    const ret = {
         result: false,
         msg: 'validation failed!',
     };

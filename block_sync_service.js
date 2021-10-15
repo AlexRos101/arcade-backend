@@ -1,12 +1,12 @@
-let config = require('./common/config');
-let database_manager = require('./manager/database_manager');
+const config = require('./common/config');
+const database_manager = require('./manager/database_manager');
 const erc721_decoder = require('abi-decoder');
 const erc721_abi = require('./contracts/ERC721.json');
 const exchange_decoder = require('abi-decoder');
 const exchange_abi = require('./contracts/EXCHANGE.json');
-let CONST = require('./common/constants');
+const CONST = require('./common/constants');
 const axios = require('axios');
-let Web3 = require('web3');
+const Web3 = require('web3');
 
 erc721_decoder.addABI(erc721_abi);
 exchange_decoder.addABI(exchange_abi);
@@ -39,11 +39,11 @@ async function sync_nft_blocks() {
         return;
     }
 
-    let transactions = history_data.data.result;
+    const transactions = history_data.data.result;
 
     try {
         for (let j = 0; j < transactions.length; j++) {
-            let transaction = transactions[j];
+            const transaction = transactions[j];
 
             if (transaction.isError == '1') continue;
 
@@ -137,7 +137,7 @@ async function sync_nft_blocks() {
 async function sync_exchange_blocks() {
     console.log('Sycnronizing Exchange blocks.');
 
-    let sync_block_number = await database_manager.get_sync_block_number(
+    const sync_block_number = await database_manager.get_sync_block_number(
         CONST.CONTRACT_TYPE.EXCHANGE
     );
 
@@ -159,11 +159,11 @@ async function sync_exchange_blocks() {
         return;
     }
 
-    let transactions = history_data.data.result;
+    const transactions = history_data.data.result;
 
     try {
         for (let j = 0; j < transactions.length; j++) {
-            let transaction = transactions[j];
+            const transaction = transactions[j];
 
             if (transaction.isError == '1') continue;
 
