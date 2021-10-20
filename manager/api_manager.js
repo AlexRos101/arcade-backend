@@ -1,26 +1,81 @@
 const mv = require('mv');
 const Unrar = require('unrar');
 const yauzl = require('yauzl');
-const database_manager = require('./database_manager');
+const fs = require('fs');
+const databaseManager = require('./database_manager');
 const config = require('../common/config');
 
-function register_apis(app) {
+function response(ret, res) {
+    res.setHeader('content-type', 'text/plain');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.status(200);
+    res.json(ret);
+}
+
+function responseInvalid(res) {
+    const ret = {
+        result: false,
+        msg: 'validation failed!',
+    };
+    response(ret, res);
+}
+
+function isValidDiscussionParams(params) {
+    if (params.stuff_id == null || params.stuff_id <= 0) {
+        return false;
+    }
+    if (params.content == null || params.content === '') {
+        return false;
+    }
+    if (params.user_type !== 0 && params.user_type !== 1) {
+        return false;
+    }
+    if (params.user_type === 0 && (params.user == null || params.user === '')) {
+        return false;
+    }
+
+    return true;
+}
+
+function isValidCommentParams(params) {
+    if (params.discussion_id == null || params.discussion_id <= 0) {
+        return false;
+    }
+
+    if (params.parent_id == null) {
+        return false;
+    }
+
+    if (params.content == null || params.content === '') {
+        return false;
+    }
+    if (params.user_type !== 0 && params.user_type !== 1) {
+        return false;
+    }
+    if (params.user_type === 0 && (params.user == null || params.user === '')) {
+        return false;
+    }
+
+    return true;
+}
+
+function registerAPIs(app) {
     app.post('/stuff/all', async (req, res) => {
-        const stuffs = await database_manager.get_stuff(null);
+        const stuffs = await databaseManager.getStuff(null);
 
         for (let i = 0; i < stuffs.length; i++) {
             const stuff = stuffs[i];
-            const discussions = await database_manager.get_discussion(
+            const discussions = await databaseManager.getDiscussion(
                 stuff.id,
                 0,
                 5
             );
             for (let j = 0; j < discussions.length; j++) {
-                const likes_count = await database_manager.get_likes_count(
+                const likesCount = await databaseManager.getLikesCount(
                     discussions[j].id,
                     -1
                 );
-                discussions[j].likes = likes_count;
+                discussions[j].likes = likesCount;
             }
             stuffs[i].discussions = discussions;
         }
@@ -35,17 +90,16 @@ function register_apis(app) {
 
     app.post('/stuff/search', async (req, res) => {
         const { keyword } = req.fields;
-        const stuffs = await database_manager.get_stuff(null);
+        const stuffs = await databaseManager.getStuff(null);
 
         for (let i = 0; i < stuffs.length; i++) {
             const stuff = stuffs[i];
-            const discussions =
-                await database_manager.get_discussion_by_keyword(
-        stuff.id,
-                    0,
-        3,
-        keyword,
-      );
+            const discussions = await databaseManager.getDiscussionByKeyword(
+                stuff.id,
+                0,
+                3,
+                keyword
+            );
             stuffs[i].discussions = discussions;
         }
 
@@ -60,7 +114,7 @@ function register_apis(app) {
     app.post('/stuff', async (req, res) => {
         const { id } = req.fields;
 
-        const stuff = await database_manager.get_stuff(id);
+        const stuff = await databaseManager.getStuff(id);
 
         const ret = {
             result: true,
@@ -75,25 +129,21 @@ function register_apis(app) {
         const { limit } = req.fields;
         const { cnt } = req.fields;
 
-        const discussions = await database_manager.get_discussion(
-      id,
-      limit,
-      cnt,
-    );
+        const discussions = await databaseManager.getDiscussion(id, limit, cnt);
         for (let i = 0; i < discussions.length; i++) {
-            const likes_count = await database_manager.get_likes_count(
+            const likesCount = await databaseManager.getLikesCount(
                 discussions[i].id,
                 -1
             );
-            discussions[i].likes = likes_count;
+            discussions[i].likes = likesCount;
         }
 
-        const total = await database_manager.get_discussion_cnt(id);
+        const total = await databaseManager.getDiscussionCnt(id);
 
         const ret = {
             result: true,
             data: discussions,
-            total: total,
+            total,
         };
 
         response(ret, res);
@@ -106,44 +156,44 @@ function register_apis(app) {
         const { cnt } = req.fields;
         let total = 0;
 
-        const discussion = await database_manager.get_discussion_by_id(id);
-        const likes_count = await database_manager.get_likes_count(
+        const discussion = await databaseManager.getDiscussionByID(id);
+        const likesCount = await databaseManager.getLikesCount(
             discussion.id,
             -1
         );
-        discussion.likes = likes_count;
+        discussion.likes = likesCount;
 
-        let is_hot = true;
-        const discussions = await database_manager.get_discussion(
+        let isHot = true;
+        const discussions = await databaseManager.getDiscussion(
             discussion.stuff_id,
             0,
             30
         );
         for (let i = 0; i < discussions.length; i++) {
-            const likes = await database_manager.get_likes_count(
+            const likes = await databaseManager.getLikesCount(
                 discussions[i].id,
                 -1
             );
 
-            if (likes > likes_count) {
-                is_hot = false;
+            if (likes > likesCount) {
+                isHot = false;
                 break;
             }
         }
-        discussion.is_hot = is_hot;
 
         if (discussion != null) {
-            let comments = await database_manager.get_comment(id);
+            discussion.is_hot = isHot;
+            const comments = await databaseManager.getComment(id);
 
             for (let i = comments.length - 1; i >= 0; i--) {
-                const likes_count = await database_manager.get_likes_count(
+                const commentLikesCount = await databaseManager.getLikesCount(
                     comments[i].discussion_id,
                     comments[i].id
                 );
-                comments[i].likes = likes_count;
+                comments[i].likes = commentLikesCount;
 
-                if (account != '' && account != undefined) {
-                    comments[i].user_like = await database_manager.get_likes(
+                if (account !== '' && account !== undefined) {
+                    comments[i].user_like = await databaseManager.get_likes(
                         comments[i].discussion_id,
                         comments[i].id,
                         account
@@ -151,13 +201,13 @@ function register_apis(app) {
                 }
 
                 const comment = comments[i];
-                if (comment.parent_id == -1) {
+                if (comment.parent_id === -1) {
                     continue;
                 }
                 for (let j = i - 1; j >= 0; j--) {
-                    if (comments[j].id == comment.parent_id) {
+                    if (comments[j].id === comment.parent_id) {
                         if (!('reply' in comments[j])) {
-                            comments[j].reply = new Array();
+                            comments[j].reply = [];
                         }
                         comments[j].reply.unshift(comment);
                         break;
@@ -172,31 +222,33 @@ function register_apis(app) {
         const ret = {
             result: true,
             data: discussion,
-            total: total,
+            total,
         };
 
         response(ret, res);
     });
 
     app.post('/discussion/new', async (req, res) => {
+        /* eslint-disable-next-line camelcase */
         const { stuff_id } = req.fields;
         const { content } = req.fields;
+        /* eslint-disable-next-line camelcase */
         const { user_type } = req.fields;
         const { user } = req.fields;
 
         if (
             !isValidDiscussionParams({
-                stuff_id: stuff_id,
+                stuff_id,
                 content,
                 user_type,
-                user: user,
+                user,
             })
         ) {
-            response_invalid(res);
+            responseInvalid(res);
             return;
         }
 
-        const result = await database_manager.add_discussion(
+        const result = await databaseManager.addDiscussion(
             stuff_id,
             content,
             user_type,
@@ -214,13 +266,13 @@ function register_apis(app) {
     app.post('/comment', async (req, res) => {
         const { id } = req.fields;
 
-        const result = await database_manager.get_comment_by_id(id);
+        const result = await databaseManager.getCommentByID(id);
 
-        const likes_count = await database_manager.get_likes_count(
+        const likesCount = await databaseManager.getLikesCount(
             result.discussion_id,
             result.id
         );
-        result.likes = likes_count;
+        result.likes = likesCount;
 
         const ret = {
             result: true,
@@ -231,26 +283,29 @@ function register_apis(app) {
     });
 
     app.post('/comment/new', async (req, res) => {
+        /* eslint-disable-next-line camelcase */
         const { discussion_id } = req.fields;
+        /* eslint-disable-next-line camelcase */
         const { parent_id } = req.fields;
         const { content } = req.fields;
+        /* eslint-disable-next-line camelcase */
         const { user_type } = req.fields;
         const { user } = req.fields;
 
         if (
             !isValidCommentParams({
                 discussion_id,
-                parent_id: parent_id,
-                content: content,
+                parent_id,
+                content,
                 user_type,
-                user: user,
+                user,
             })
         ) {
-            response_invalid(res);
+            responseInvalid(res);
             return;
         }
 
-        const result = await database_manager.add_comment(
+        const result = await databaseManager.addComment(
             discussion_id,
             parent_id,
             content,
@@ -267,7 +322,7 @@ function register_apis(app) {
     });
 
     app.post('/get_games', async (req, res) => {
-        const result = await database_manager.get_games();
+        const result = await databaseManager.getGames();
 
         const ret = {
             result: true,
@@ -278,19 +333,21 @@ function register_apis(app) {
     });
 
     app.post('/set_likes', async (req, res) => {
+        /* eslint-disable-next-line camelcase */
         const { discussion_id } = req.fields;
+        /* eslint-disable-next-line camelcase */
         const { parent_id } = req.fields;
         const { user } = req.fields;
         const likesOrUnlikes = req.fields.likes;
         let result = {};
-        if (likesOrUnlikes == true) {
-            result = await database_manager.insert_likes(
+        if (likesOrUnlikes === true) {
+            result = await databaseManager.insertLikes(
                 discussion_id,
                 parent_id,
                 user
             );
         } else {
-            result = await database_manager.delete_likes(
+            result = await databaseManager.deleteLikes(
                 discussion_id,
                 parent_id,
                 user
@@ -306,11 +363,13 @@ function register_apis(app) {
     });
 
     app.post('/get_likes', async (req, res) => {
+        /* eslint-disable-next-line camelcase */
         const { discussion_id } = req.fields;
+        /* eslint-disable-next-line camelcase */
         const { parent_id } = req.fields;
         const { user } = req.fields;
 
-        const result = await database_manager.get_likes(
+        const result = await databaseManager.getLikes(
             discussion_id,
             parent_id,
             user
@@ -325,7 +384,7 @@ function register_apis(app) {
     });
 
     app.post('/get_categories', async (req, res) => {
-        const result = await database_manager.get_categories();
+        const result = await databaseManager.getCategories();
 
         const ret = {
             result: true,
@@ -337,28 +396,30 @@ function register_apis(app) {
 
     app.post('/get_items_by_address', async (req, res) => {
         const { address } = req.fields;
+        /* eslint-disable-next-line camelcase */
         const sort_type = req.fields.sort;
         const { limit } = req.fields;
         const { cnt } = req.fields;
 
         if (
-            address == null ||
-            address == '' ||
-            sort_type == null ||
-            limit == null ||
-            cnt == null
+            address === null ||
+            address === '' ||
+            /* eslint-disable-next-line camelcase */
+            sort_type === null ||
+            limit === null ||
+            cnt === null
         ) {
-            response_invalid(res);
+            responseInvalid(res);
             return;
         }
 
-        const result = await database_manager.get_items_by_address(
+        const result = await databaseManager.getItemsByAddress(
             address,
             sort_type,
             limit,
             cnt
         );
-        const total = await database_manager.get_items_by_address_cnt(address);
+        const total = await databaseManager.getItemsByAddressCnt(address);
 
         const ret = {
             result: true,
@@ -372,6 +433,7 @@ function register_apis(app) {
     app.post('/get_market_items', async (req, res) => {
         const { game } = req.fields;
         const { category } = req.fields;
+        /* eslint-disable-next-line camelcase */
         const sort_type = req.fields.sort;
         const { limit } = req.fields;
         const { cnt } = req.fields;
@@ -379,29 +441,27 @@ function register_apis(app) {
         if (
             game == null ||
             category == null ||
+            /* eslint-disable-next-line camelcase */
             sort_type == null ||
             limit == null ||
             cnt == null
         ) {
-            response_invalid(res);
+            responseInvalid(res);
             return;
         }
 
-        const result = await database_manager.get_market_items(
+        const result = await databaseManager.getMarketItems(
             game,
             category,
             sort_type,
             limit,
             cnt
         );
-        const total = await database_manager.get_market_items_cnt(
-            game,
-            category
-        );
+        const total = await databaseManager.getMarketItemsCnt(game, category);
         const ret = {
             result: true,
             data: result,
-            total: total,
+            total,
         };
 
         response(ret, res);
@@ -411,11 +471,11 @@ function register_apis(app) {
         const { id } = req.fields;
 
         if (id == null) {
-            response_invalid(res);
+            responseInvalid(res);
             return;
         }
 
-        const result = await database_manager.get_token_by_id(id);
+        const result = await databaseManager.getTokenByID(id);
 
         const ret = {
             result: result != null,
@@ -427,19 +487,22 @@ function register_apis(app) {
 
     app.post('/update_item_by_id', async (req, res) => {
         const { id } = req.fields;
+        /* eslint-disable-next-line camelcase */
         const { game_id } = req.fields;
+        /* eslint-disable-next-line camelcase */
         const { category_id } = req.fields;
         const { name } = req.fields;
+        /* eslint-disable-next-line camelcase */
         const { is_anonymous } = req.fields;
         const { description } = req.fields;
         const { price } = req.fields;
 
         if (id == null) {
-            response_invalid(res);
+            responseInvalid(res);
             return;
         }
 
-        const result = await database_manager.update_token_by_id(
+        const result = await databaseManager.updateTokenByID(
             id,
             game_id,
             category_id,
@@ -461,11 +524,11 @@ function register_apis(app) {
         const id = req.fields.token_id;
 
         if (id == null) {
-            response_invalid(res);
+            responseInvalid(res);
             return;
         }
 
-        const result = await database_manager.get_token_by_tokenid(id);
+        const result = await databaseManager.getTokenByTokenID(id);
 
         const ret = {
             result: result != null,
@@ -486,18 +549,18 @@ function register_apis(app) {
             files.myFile.name.slice(
                 files.myFile.name.length - 4,
                 files.myFile.name.length
-            ) != '.rar' &&
+            ) !== '.rar' &&
             files.myFile.name.slice(
                 files.myFile.name.length - 4,
                 files.myFile.name.length
-            ) != '.zip'
+            ) !== '.zip'
         ) {
             response({ result: false }, res);
             return;
         }
 
         const oldpath = files.myFile.path;
-        const newpath = config.material_path + files.myFile.name;
+        const newpath = config.materialPath + files.myFile.name;
         mv(oldpath, newpath, async (err) => {
             if (err) {
                 console.log(err);
@@ -505,155 +568,114 @@ function register_apis(app) {
                 return;
             }
 
-            if (newpath.slice(newpath.length - 4, newpath.length) == '.rar') {
+            if (newpath.slice(newpath.length - 4, newpath.length) === '.rar') {
                 const archive = new Unrar(newpath);
 
-                archive.list((err, entries) => {
-          for (let i = 0; i < entries.length; i++) {
-            const { name } = entries[i];
-            const { type } = entries[i];
-            if (type == 'File' && name == 'thumbnail.png') {
-              const stream = archive.stream('thumbnail.png'); // name of entry
-              stream.on('error', () => {
-                response({ result: false });
-              });
-              stream.pipe(
-                require('fs').createWriteStream(
-                  config.thumbnail_path
-                                        + files.myFile.name.slice(
-                                          0,
-                                          files.myFile.name.length - 4,
-                                        )
-                                        + '.png',
-                ),
-              );
-
-              response({ result: true }, res);
-              return;
-            }
-          }
-
-          response(
-            {
-              result: false,
-              code: -1,
-              msg: 'Not exist thumbnail file.',
-            },
-            res,
-          );
-        });
-            } else if (
-                newpath.slice(newpath.length - 4, newpath.length) == '.zip'
-            ) {
-                yauzl.open(newpath, { lazyEntries: true }, (err, zipfile) => {
-                    if (err) {
+                archive.list((listErr, entries) => {
+                    if (listErr === null) {
+                        console.log(listErr);
                         response({ result: false }, res);
                         return;
                     }
 
-                    let exist_thumbnail = false;
-                    zipfile.readEntry();
-                    zipfile.on('entry', (entry) => {
-                        if (entry.fileName == 'thumbnail.png') {
-                            zipfile.openReadStream(entry, (err, readStream) => {
-                                if (err) {
-                                    response({ result: false }, res);
-                                    return;
-                                }
-
-                                readStream.on('end', () => {
-                                    zipfile.readEntry();
-                                });
-                                readStream.pipe(
-                                    require('fs').createWriteStream(
-                                        config.thumbnail_path +
-                                            files.myFile.name.slice(
-                                                0,
-                                                files.myFile.name.length - 4
-                                            ) +
-                                            '.png'
-                                    )
-                                );
-                                exist_thumbnail = true;
+                    for (let i = 0; i < entries.length; i++) {
+                        const { name } = entries[i];
+                        const { type } = entries[i];
+                        if (type === 'File' && name === 'thumbnail.png') {
+                            const stream = archive.stream('thumbnail.png'); // name of entry
+                            stream.on('error', () => {
+                                response({ result: false });
                             });
-                        } else {
-                            zipfile.readEntry();
-                        }
-                    });
-                    zipfile.once('end', () => {
-                        zipfile.close();
-
-                        if (exist_thumbnail) {
-                            response({ result: true }, res);
-                        } else {
-                            response(
-                                {
-                                    result: false,
-                                    code: -1,
-                                    msg: 'Not exist thumbnail file.',
-                                },
-                                res
+                            stream.pipe(
+                                fs.createWriteStream(
+                                    `${
+                                        config.thumbnailPath
+                                    }${files.myFile.name.slice(
+                                        0,
+                                        files.myFile.name.length - 4
+                                    )}.png`
+                                )
                             );
+
+                            response({ result: true }, res);
+                            return;
                         }
-                    });
+                    }
+
+                    response(
+                        {
+                            result: false,
+                            code: -1,
+                            msg: 'Not exist thumbnail file.',
+                        },
+                        res
+                    );
                 });
+            } else if (
+                newpath.slice(newpath.length - 4, newpath.length) === '.zip'
+            ) {
+                yauzl.open(
+                    newpath,
+                    { lazyEntries: true },
+                    (openErr, zipfile) => {
+                        if (openErr) {
+                            console.log(openErr);
+                            response({ result: false }, res);
+                            return;
+                        }
+
+                        let existThumbnail = false;
+                        zipfile.readEntry();
+                        zipfile.on('entry', (entry) => {
+                            if (entry.fileName === 'thumbnail.png') {
+                                zipfile.openReadStream(
+                                    entry,
+                                    (entryErr, readStream) => {
+                                        if (entryErr) {
+                                            response({ result: false }, res);
+                                            return;
+                                        }
+
+                                        readStream.on('end', () => {
+                                            zipfile.readEntry();
+                                        });
+                                        readStream.pipe(
+                                            fs.createWriteStream(
+                                                `${
+                                                    config.thumbnailPath
+                                                }${files.myFile.name.slice(
+                                                    0,
+                                                    files.myFile.name.length - 4
+                                                )}.png`
+                                            )
+                                        );
+                                        existThumbnail = true;
+                                    }
+                                );
+                            } else {
+                                zipfile.readEntry();
+                            }
+                        });
+                        zipfile.once('end', () => {
+                            zipfile.close();
+
+                            if (existThumbnail) {
+                                response({ result: true }, res);
+                            } else {
+                                response(
+                                    {
+                                        result: false,
+                                        code: -1,
+                                        msg: 'Not exist thumbnail file.',
+                                    },
+                                    res
+                                );
+                            }
+                        });
+                    }
+                );
             }
         });
     });
 }
-
-function response(ret, res) {
-    res.setHeader('content-type', 'text/plain');
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.status(200);
-    res.json(ret);
-}
-
-function response_invalid(res) {
-    const ret = {
-        result: false,
-        msg: 'validation failed!',
-    };
-    response(ret, res);
-}
-
-function isValidDiscussionParams(params) {
-    if (params.stuff_id == null || params.stuff_id <= 0) {
-        return false;
-    }
-    if (params.content == null || params.content == '') {
-        return false;
-    }
-    if (params.user_type != 0 && params.user_type != 1) {
-        return false;
-    }
-    if (params.user_type == 0 && (params.user == null || params.user == '')) {
-        return false;
-    }
-
-    return true;
-}
-
-function isValidCommentParams(params) {
-    if (params.discussion_id == null || params.discussion_id <= 0) {
-        return false;
-    }
-
-    if (params.parent_id == null) {
-        return false;
-    }
-
-    if (params.content == null || params.content == '') {
-        return false;
-    }
-    if (params.user_type != 0 && params.user_type != 1) {
-        return false;
-    }
-    if (params.user_type == 0 && (params.user == null || params.user == '')) {
-        return false;
-    }
-
-    return true;
-}
-
-module.exports = register_apis;
+module.exports = registerAPIs;

@@ -16,76 +16,99 @@ async function connect() {
 }
 /* eslint-enable */
 
-async function start_transaction(connection) {
+async function startTransactions(connection) {
     const query = 'START TRANSACTION';
     await connection.query(query);
 }
 
-async function commit_transaction(connection) {
+async function commitTransaction(connection) {
     const query = 'COMMIT';
     await connection.query(query);
 }
 
-async function rollback_transaction(connection) {
+async function rollbackTransaction(connection) {
     const query = 'ROLLBACK';
     await connection.query(query);
 }
 
-async function on_connection_err(connection, err, is_roll_back = false) {
+async function onConnectionErr(connection, err, isRollBack = false) {
     console.log(err);
     if (connection == null) return;
-    if (err.errono == CONST.MYSQL_ERR_NO.CONNECTION_ERROR) return;
-    if (is_roll_back) await rollback_transaction(connection);
+    if (err.errono === CONST.MYSQL_ERR_NO.CONNECTION_ERROR) return;
+    if (isRollBack) await rollbackTransaction(connection);
     connection.release();
 }
 
-async function get_stuff(stuff_id) {
-  let connection = null;
-  try {
-    connection = await connect();
+async function mysqlExecute(connection, query, params = []) {
+    // let stringify_params = [];
+    // for (let i = 0; i < params.length; i++) {
+    //     stringify_params.push(params[i].toString());
+    // }
 
-    let rows = null;
-
-    if (stuff_id == null || stuff_id == '') {
-      const query = 'SELECT * from tbl_stuff';
-      [rows] = await mysql_execute(connection, query);
-
-      connection.release();
-      return rows;
-    }
-        const query = 'SELECT * from tbl_stuff WHERE id LIKE ?';
-        [rows] = await mysql_execute(connection, query, [stuff_id]);
-
-        connection.release();
-        if (rows.length == 0) return null;
-
-    return rows[0];
-    } catch (err) {
-    on_connection_err(connection, err);
-  }
-
-  return null;
+    return await connection.query(query, params);
 }
 
-async function get_discussion_cnt(stuff_id) {
-    let connection = await connect();
+function getOrderByClause(sortType) {
+    switch (sortType) {
+        case CONST.SORT_TYPE.PRICE_HIGH_LOW:
+            return 'ORDER BY arcadedoge_price DESC';
+        case CONST.SORT_TYPE.PRICE_LOW_HIGH:
+            return 'ORDER BY arcadedoge_price ASC';
+        case CONST.SORT_TYPE.POPULAR:
+            return 'ORDER BY trade_cnt DESC';
+        case CONST.SORT_TYPE.RECENT:
+        default:
+            return 'ORDER BY updated_at DESC';
+    }
+}
+
+async function getStuff(stuffID) {
+    let connection = null;
+    try {
+        connection = await connect();
+
+        let rows = null;
+
+        if (stuffID == null || stuffID === '') {
+            const query = 'SELECT * from tbl_stuff';
+            [rows] = await mysqlExecute(connection, query);
+
+            connection.release();
+            return rows;
+        }
+        const query = 'SELECT * from tbl_stuff WHERE id LIKE ?';
+        [rows] = await mysqlExecute(connection, query, [stuffID]);
+
+        connection.release();
+        if (rows.length === 0) return null;
+
+        return rows[0];
+    } catch (err) {
+        onConnectionErr(connection, err);
+    }
+
+    return null;
+}
+
+async function getDiscussionCnt(stuffID) {
+    const connection = await connect();
 
     let rows = null;
 
-    if (stuff_id == null || stuff_id == '') {
+    if (stuffID == null || stuffID === '') {
         const query = 'SELECT COUNT(id) as total FROM tbl_discussion';
-        [rows] = await mysql_execute(connection, query, []);
+        [rows] = await mysqlExecute(connection, query, []);
     } else {
         const query =
             'SELECT COUNT(id) as total FROM tbl_discussion WHERE stuff_id LIKE ?';
-        [rows] = await mysql_execute(connection, query, [stuff_id]);
+        [rows] = await mysqlExecute(connection, query, [stuffID]);
     }
 
     connection.release();
     return rows[0].total;
 }
 
-async function get_discussion(stuff_id, limit, cnt) {
+async function getDiscussion(stuffID, limit, cnt) {
     let connection = null;
 
     try {
@@ -93,19 +116,19 @@ async function get_discussion(stuff_id, limit, cnt) {
 
         let rows = null;
 
-        if (stuff_id == null || stuff_id == '') {
+        if (stuffID == null || stuffID === '') {
             const query =
                 'SELECT tbl_discussion.*, COUNT(tbl_comment.id) as comment_cnt FROM tbl_discussion ' +
                 'LEFT JOIN tbl_comment ON tbl_discussion.id = tbl_comment.discussion_id ' +
                 'GROUP BY tbl_discussion.id ORDER BY tbl_discussion.likes DESC LIMIT ?, ?';
-            [rows] = await mysql_execute(connection, query, [limit, cnt]);
+            [rows] = await mysqlExecute(connection, query, [limit, cnt]);
         } else {
             const query =
                 'SELECT tbl_discussion.*, COUNT(tbl_comment.id) as comment_cnt FROM tbl_discussion ' +
                 'LEFT JOIN tbl_comment ON tbl_discussion.id = tbl_comment.discussion_id ' +
                 'WHERE stuff_id LIKE ? GROUP BY tbl_discussion.id ORDER BY tbl_discussion.likes DESC LIMIT ?, ?';
-            [rows] = await mysql_execute(connection, query, [
-                stuff_id,
+            [rows] = await mysqlExecute(connection, query, [
+                stuffID,
                 limit,
                 cnt,
             ]);
@@ -114,13 +137,13 @@ async function get_discussion(stuff_id, limit, cnt) {
         connection.release();
         return rows;
     } catch (err) {
-        on_connection_err(connection, err);
+        onConnectionErr(connection, err);
     }
 
     return [];
 }
 
-async function get_discussion_by_keyword(stuff_id, limit, cnt, keyword) {
+async function getDiscussionByKeyword(stuffID, limit, cnt, keyword) {
     let connection = null;
 
     try {
@@ -129,9 +152,9 @@ async function get_discussion_by_keyword(stuff_id, limit, cnt, keyword) {
             'SELECT * from tbl_discussion ' +
             'WHERE tbl_discussion.content LIKE ? AND tbl_discussion.stuff_id LIKE ?' +
             ' ORDER BY tbl_discussion.likes DESC LIMIT ?, ?';
-        const [rows] = await mysql_execute(connection, query, [
-            '%' + keyword + '%',
-            stuff_id,
+        const [rows] = await mysqlExecute(connection, query, [
+            `%${keyword}%`,
+            stuffID,
             limit,
             cnt,
         ]);
@@ -139,13 +162,13 @@ async function get_discussion_by_keyword(stuff_id, limit, cnt, keyword) {
         connection.release();
         return rows;
     } catch (err) {
-        on_connection_err(connection, err);
+        onConnectionErr(connection, err);
     }
 
     return [];
 }
 
-async function get_discussion_by_id(id) {
+async function getDiscussionByID(id) {
     let connection = null;
 
     try {
@@ -155,40 +178,40 @@ async function get_discussion_by_id(id) {
             'SELECT tbl_discussion.*, COUNT(tbl_comment.id) as comment_cnt from tbl_discussion ' +
             'LEFT JOIN tbl_comment ON tbl_discussion.id = tbl_comment.discussion_id ' +
             'WHERE tbl_discussion.id LIKE ? GROUP BY tbl_discussion.id';
-        const [rows] = await mysql_execute(connection, query, [id]);
+        const [rows] = await mysqlExecute(connection, query, [id]);
 
         connection.release();
-        if (rows.length == 0) return null;
+        if (rows.length === 0) return null;
 
         return rows[0];
     } catch (err) {
-        on_connection_err(connection, err);
+        onConnectionErr(connection, err);
     }
 
     return null;
 }
 
-async function get_comment_by_id(id) {
+async function getCommentByID(id) {
     let connection = null;
 
     try {
         connection = await connect();
 
         const query = 'SELECT * FROM tbl_comment WHERE id LIKE ?';
-        const [rows] = await mysql_execute(connection, query, [id]);
+        const [rows] = await mysqlExecute(connection, query, [id]);
 
         connection.release();
-        if (rows.length == 0) return null;
+        if (rows.length === 0) return null;
 
         return rows[0];
     } catch (err) {
-        on_connection_err(connection, err);
+        onConnectionErr(connection, err);
     }
 
     return null;
 }
 
-async function get_comment(discussion_id) {
+async function getComment(discussionID) {
     let connection = null;
 
     try {
@@ -196,85 +219,85 @@ async function get_comment(discussion_id) {
 
         let rows = null;
 
-        if (discussion_id == null || discussion_id == '') {
+        if (discussionID == null || discussionID === '') {
             const query = 'SELECT * from tbl_comment';
-            [rows] = await mysql_execute(connection, query);
+            [rows] = await mysqlExecute(connection, query);
         } else {
             const query =
                 'SELECT * from tbl_comment WHERE discussion_id LIKE ?';
-            [rows] = await mysql_execute(connection, query, [discussion_id]);
+            [rows] = await mysqlExecute(connection, query, [discussionID]);
         }
 
         connection.release();
         return rows;
     } catch (err) {
-        on_connection_err(err);
+        onConnectionErr(err);
     }
 
     return [];
 }
 
-async function add_discussion(stuff_id, content, user_type, user) {
+async function addDiscussion(stuffID, content, userType, user) {
     let connection = null;
     let ret = false;
 
     try {
         connection = await connect();
 
-        await start_transaction(connection);
+        await startTransactions(connection);
 
         const query =
             'INSERT INTO tbl_discussion (stuff_id, content, user, user_type) ' +
             'VALUE (?,?,?,?)';
-        const [rows] = await mysql_execute(connection, query, [
-            stuff_id,
+        const [rows] = await mysqlExecute(connection, query, [
+            stuffID,
             content,
             user,
-            user_type,
+            userType,
         ]);
 
-        await commit_transaction(connection);
+        await commitTransaction(connection);
         ret = rows.insertId > 0;
         connection.release();
     } catch (err) {
-        await on_connection_err(connection, err, true);
+        await onConnectionErr(connection, err, true);
     }
 
     return ret;
 }
 
-async function add_comment(discussion_id, parent_id, content, user_type, user) {
+async function addComment(discussionID, parentID, content, userType, user) {
     let connection = null;
     let ret = false;
 
     try {
         connection = await connect();
 
-        await start_transaction(connection);
+        await startTransactions(connection);
 
         const query =
             'INSERT INTO tbl_comment ' +
             '(discussion_id, parent_id, content, user, user_type) ' +
             'VALUE (?,?,?,?,?)';
-        const [rows] = await mysql_execute(connection, query, [
-            discussion_id,
-            parent_id,
+        const [rows] = await mysqlExecute(connection, query, [
+            discussionID,
+            parentID,
             content,
             user,
-            user_type,
+            userType,
         ]);
 
-        await commit_transaction(connection);
+        await commitTransaction(connection);
         ret = rows.insertId;
         connection.release();
     } catch (err) {
-        await on_connection_err(connection, err, true);
+        await onConnectionErr(connection, err, true);
     }
 
     return ret;
 }
 
-async function add_token(connection, item) {
+async function addToken(connection, item) {
     let ret = 0;
 
     try {
@@ -283,7 +306,7 @@ async function add_token(connection, item) {
             '(game_id, category_id, contract_address, token_id, name, description, ' +
             'attach_url, owner, is_anonymous, arcadedoge_price) ' +
             'VALUE(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
-        const [rows] = await mysql_execute(connection, query, [
+        const [rows] = await mysqlExecute(connection, query, [
             item.game_id,
             item.category_id,
             item.contract_address,
@@ -302,14 +325,14 @@ async function add_token(connection, item) {
     return ret;
 }
 
-async function add_mint_tx(connection, id, item) {
+async function addMintTx(connection, id, item) {
     let ret = false;
 
     try {
         const query =
             'INSERT INTO tbl_history (token_id, from_address, to_address, type) ' +
             'VALUE(?, ?, ?, ?)';
-        const [rows] = await mysql_execute(connection, query, [
+        const [rows] = await mysqlExecute(connection, query, [
             id,
             item.owner,
             item.owner,
@@ -323,19 +346,15 @@ async function add_mint_tx(connection, id, item) {
     return ret;
 }
 
-async function update_sync_block_number(
-    connection,
-    contract_type,
-    block_number
-) {
+async function updateSyncBlockNumber(connection, contractType, blockNumber) {
     let ret = false;
 
     try {
         const query =
             'UPDATE tbl_status SET block_number = ? WHERE contract_type = ?';
-        const [rows] = await mysql_execute(connection, query, [
-            block_number,
-            contract_type,
+        const [rows] = await mysqlExecute(connection, query, [
+            blockNumber,
+            contractType,
         ]);
         ret = rows.affectedRows > 0;
     } catch (err) {
@@ -345,45 +364,45 @@ async function update_sync_block_number(
     return ret;
 }
 
-async function mint_token(item, block_number) {
+async function mintToken(item, blockNumber) {
     let connection = null;
     let ret = false;
 
     try {
         connection = await connect();
 
-        await start_transaction(connection);
+        await startTransactions(connection);
 
-        const token_id = await add_token(connection, item);
-        if (token_id == 0) throw new Error('Adding token failed.');
+        const tokenID = await addToken(connection, item);
+        if (tokenID === 0) throw new Error('Adding token failed.');
 
-        if (!(await add_mint_tx(connection, token_id, item))) {
+        if (!(await addMintTx(connection, tokenID, item))) {
             throw new Error('Adding mint tx failed.');
         }
 
         if (
-            !(await update_sync_block_number(
+            !(await updateSyncBlockNumber(
                 connection,
                 CONST.CONTRACT_TYPE.NFT,
-                block_number
+                blockNumber
             ))
         ) {
             throw new Error('Updating sync block number failed.');
         }
 
-        await commit_transaction(connection);
+        await commitTransaction(connection);
 
         ret = true;
 
         connection.release();
     } catch (err) {
-        await on_connection_err(connection, err, true);
+        await onConnectionErr(connection, err, true);
     }
 
     return ret;
 }
 
-async function get_sync_block_number(contract_type) {
+async function getSyncBlockNumber(contractType) {
     let ret = -1;
     let connection = null;
 
@@ -391,17 +410,17 @@ async function get_sync_block_number(contract_type) {
         connection = await connect();
         const query =
             'SELECT block_number FROM tbl_status WHERE contract_type = ?';
-        const [rows] = await mysql_execute(connection, query, [contract_type]);
+        const [rows] = await mysqlExecute(connection, query, [contractType]);
         ret = rows[0].block_number;
         connection.release();
     } catch (err) {
-        on_connection_err(connection, err);
+        onConnectionErr(connection, err);
     }
 
     return ret;
 }
 
-async function get_token_by_id(id) {
+async function getTokenByID(id) {
     let connection = null;
     let ret = null;
 
@@ -409,24 +428,24 @@ async function get_token_by_id(id) {
         connection = await connect();
 
         const query = 'SELECT * from tbl_item WHERE id = ?';
-        const [rows] = await mysql_execute(connection, query, [id]);
+        const [rows] = await mysqlExecute(connection, query, [id]);
         if (rows.length > 0) ret = rows[0];
 
         connection.release();
     } catch (err) {
-        on_connection_err(connection, err);
+        onConnectionErr(connection, err);
     }
 
     return ret;
 }
 
-async function update_token_by_id(
+async function updateTokenByID(
     id,
-    game_id,
-    category_id,
+    gameID,
+    categoryID,
     name,
     description,
-    is_anonymous,
+    isAnonymous,
     price
 ) {
     let connection = null;
@@ -439,12 +458,12 @@ async function update_token_by_id(
             'UPDATE tbl_item ' +
             'SET game_id=?, category_id=?, name=?, description=?, is_anonymous=?, arcadedoge_price=? ' +
             'WHERE id = ?';
-        const [rows] = await mysql_execute(connection, query, [
-            game_id,
-            category_id,
+        const [rows] = await mysqlExecute(connection, query, [
+            gameID,
+            categoryID,
             name,
             description,
-            is_anonymous,
+            isAnonymous,
             price,
             id,
         ]);
@@ -452,13 +471,13 @@ async function update_token_by_id(
 
         connection.release();
     } catch (err) {
-        on_connection_err(connection, err);
+        onConnectionErr(connection, err);
     }
 
     return ret;
 }
 
-async function get_token_by_tokenid(token_id) {
+async function getTokenByTokenID(tokenID) {
     let connection = null;
     let ret = null;
 
@@ -466,17 +485,17 @@ async function get_token_by_tokenid(token_id) {
         connection = await connect();
 
         const query = 'SELECT * from tbl_item WHERE token_id = ?';
-        const [rows] = await mysql_execute(connection, query, [token_id]);
+        const [rows] = await mysqlExecute(connection, query, [tokenID]);
         if (rows.length > 0) ret = rows[0];
         connection.release();
     } catch (err) {
-        on_connection_err(connection, err);
+        onConnectionErr(connection, err);
     }
 
     return ret;
 }
 
-async function get_token_by_contract_info(contract_address, token_id) {
+async function getTokenByContractInfo(contractAddress, tokenID) {
     let connection = null;
     let ret = null;
 
@@ -486,26 +505,26 @@ async function get_token_by_contract_info(contract_address, token_id) {
         const query =
             'SELECT * from tbl_item ' +
             'WHERE contract_address = ? AND token_id = ?';
-        const [rows] = await mysql_execute(connection, query, [
-            contract_address,
-            token_id,
+        const [rows] = await mysqlExecute(connection, query, [
+            contractAddress,
+            tokenID,
         ]);
         if (rows.length > 0) ret = rows[0];
 
         connection.release();
     } catch (err) {
-        on_connection_err(connection, err);
+        onConnectionErr(connection, err);
     }
 
     return ret;
 }
 
-async function delete_token(connection, id) {
+async function deleteToken(connection, id) {
     let ret = false;
 
     try {
         const query = 'UPDATE tbl_item SET is_burnt = ? WHERE id = ?';
-        const [rows] = await mysql_execute(connection, query, [
+        const [rows] = await mysqlExecute(connection, query, [
             CONST.BURN_STATUS.BURNT,
             id,
         ]);
@@ -517,14 +536,14 @@ async function delete_token(connection, id) {
     return ret;
 }
 
-async function add_burn_tx(connection, item) {
+async function addBurnTx(connection, item) {
     let ret = false;
 
     try {
         const query =
             'INSERT INTO tbl_history ' +
             '(token_id, from_address, to_address, type) VALUE (?, ?, ?, ?)';
-        const [rows] = await mysql_execute(connection, query, [
+        const [rows] = await mysqlExecute(connection, query, [
             item.id,
             item.owner,
             item.owner,
@@ -538,75 +557,69 @@ async function add_burn_tx(connection, item) {
     return ret;
 }
 
-async function burn_token(contract_address, token_id, block_number) {
+async function burnToken(contractAddress, tokenID, blockNumber) {
     let connection = null;
     let ret = false;
 
     try {
         connection = await connect();
 
-        await start_transaction(connection);
+        await startTransactions(connection);
 
-        const token = await get_token_by_contract_info(
-            contract_address,
-            token_id
-        );
+        const token = await getTokenByContractInfo(contractAddress, tokenID);
         if (token == null) throw new Error('Not exist token.');
 
-        if (!(await delete_token(connection, token.id))) {
+        if (!(await deleteToken(connection, token.id))) {
             throw new Error('Deleting token failed.');
         }
 
-        if (!(await add_burn_tx(connection, token))) {
+        if (!(await addBurnTx(connection, token))) {
             throw new Error('Adding burn tx failed.');
         }
 
         if (
-            !(await update_sync_block_number(
+            !(await updateSyncBlockNumber(
                 connection,
                 CONST.CONTRACT_TYPE.NFT,
-                block_number
+                blockNumber
             ))
         ) {
             throw new Error('Updating sync block number failed.');
         }
 
-        await commit_transaction(connection);
+        await commitTransaction(connection);
         ret = true;
 
         connection.release();
     } catch (err) {
-        await on_connection_err(connection, err, true);
+        await onConnectionErr(connection, err, true);
     }
 
     return ret;
 }
 
-async function update_token_visible(
+async function updateTokenVisible(
     connection,
     id,
     visible,
-    arcadedoge_price = 0
+    arcadedogePrice = 0
 ) {
     let ret = false;
 
     try {
-        if (visible == CONST.VISIBILITY_STATUS.SHOW) {
+        if (visible === CONST.VISIBILITY_STATUS.SHOW) {
             const query =
                 'UPDATE tbl_item SET is_visible = ?, arcadedoge_price = ? ' +
                 'WHERE id = ?';
-            const [rows] = await mysql_execute(connection, query, [
+            const [rows] = await mysqlExecute(connection, query, [
                 visible,
-                arcadedoge_price,
+                arcadedogePrice,
                 id,
             ]);
             ret = rows.affectedRows > 0;
-        } else if (visible == CONST.VISIBILITY_STATUS.HIDDEN) {
+        } else if (visible === CONST.VISIBILITY_STATUS.HIDDEN) {
             const query = 'UPDATE tbl_item SET is_visible = ? WHERE id = ?';
-            const [rows] = await mysql_execute(connection, query, [
-                visible,
-                id,
-            ]);
+            const [rows] = await mysqlExecute(connection, query, [visible, id]);
             ret = rows.affectedRows > 0;
         }
     } catch (err) {
@@ -616,11 +629,11 @@ async function update_token_visible(
     return ret;
 }
 
-async function sell_token(
-    contract_address,
-    token_id,
-    arcadedoge_price,
-    block_number
+async function sellToken(
+    contractAddress,
+    tokenID,
+    arcadedogePrice,
+    blockNumber
 ) {
     let connection = null;
     let ret = false;
@@ -628,63 +641,57 @@ async function sell_token(
     try {
         connection = await connect();
 
-        await start_transaction(connection);
+        await startTransactions(connection);
 
-        const token = await get_token_by_contract_info(
-            contract_address,
-            token_id
-        );
+        const token = await getTokenByContractInfo(contractAddress, tokenID);
         if (token == null) throw new Error('Not exist token.');
 
         if (
-            !(await update_token_visible(
+            !(await updateTokenVisible(
                 connection,
                 token.id,
                 CONST.VISIBILITY_STATUS.SHOW,
-                arcadedoge_price
+                arcadedogePrice
             ))
         ) {
             throw new Error('Setting visible failed.');
         }
 
         if (
-            !(await update_sync_block_number(
+            !(await updateSyncBlockNumber(
                 connection,
                 CONST.CONTRACT_TYPE.EXCHANGE,
-                block_number
+                blockNumber
             ))
         ) {
             throw new Error('Updating sync block failed.');
         }
 
-        await commit_transaction(connection);
+        await commitTransaction(connection);
         ret = true;
 
         connection.release();
     } catch (err) {
-        await on_connection_err(connection, err, true);
+        await onConnectionErr(connection, err, true);
     }
 
     return ret;
 }
 
-async function cancel_sell_token(contract_address, token_id, block_number) {
+async function cancelSellToken(contractAddress, tokenID, blockNumber) {
     let connection = null;
     let ret = false;
 
     try {
         connection = await connect();
 
-        await start_transaction(connection);
+        await startTransactions(connection);
 
-        const token = await get_token_by_contract_info(
-            contract_address,
-            token_id
-        );
+        const token = await getTokenByContractInfo(contractAddress, tokenID);
         if (token == null) throw new Error('Not exist token.');
 
         if (
-            !(await update_token_visible(
+            !(await updateTokenVisible(
                 connection,
                 token.id,
                 CONST.VISIBILITY_STATUS.HIDDEN
@@ -694,33 +701,33 @@ async function cancel_sell_token(contract_address, token_id, block_number) {
         }
 
         if (
-            !(await update_sync_block_number(
+            !(await updateSyncBlockNumber(
                 connection,
                 CONST.CONTRACT_TYPE.EXCHANGE,
-                block_number
+                blockNumber
             ))
         ) {
             throw new Error('Updating sync block failed.');
         }
 
-        await commit_transaction(connection);
+        await commitTransaction(connection);
         ret = true;
 
         connection.release();
     } catch (err) {
-        await on_connection_err(connection, err, true);
+        await onConnectionErr(connection, err, true);
     }
 
     return ret;
 }
 
-async function update_token_owner(connection, id, owner) {
+async function updateTokenOwner(connection, id, owner) {
     let ret = false;
 
     try {
         const query =
             'UPDATE tbl_item SET owner = ?, is_visible = false WHERE id = ?';
-        const [rows] = await mysql_execute(connection, query, [owner, id]);
+        const [rows] = await mysqlExecute(connection, query, [owner, id]);
         ret = rows.affectedRows > 0;
     } catch (err) {
         console.log(err);
@@ -729,7 +736,7 @@ async function update_token_owner(connection, id, owner) {
     return ret;
 }
 
-async function add_exchange_tx(connection, id, from, to, asset_id, amount) {
+async function addExchangeTx(connection, id, from, to, assetID, amount) {
     let ret = false;
 
     try {
@@ -737,11 +744,11 @@ async function add_exchange_tx(connection, id, from, to, asset_id, amount) {
             'INSERT INTO tbl_history ' +
             '(token_id, from_address, to_address, asset_id, amount, type) ' +
             'VALUE(?, ?, ?, ?, ?, ?)';
-        const [rows] = await mysql_execute(connection, query, [
+        const [rows] = await mysqlExecute(connection, query, [
             id,
             from,
             to,
-            asset_id,
+            assetID,
             amount,
             CONST.TX_TYPE.EXCHANGE,
         ]);
@@ -753,14 +760,14 @@ async function add_exchange_tx(connection, id, from, to, asset_id, amount) {
     return ret;
 }
 
-async function add_transfer_tx(connection, id, from, to) {
+async function addTransferTx(connection, id, from, to) {
     let ret = false;
 
     try {
         const query =
             'INSERT INTO tbl_history ' +
             '(token_id, from_address, to_address, type) VALUE(?, ?, ?, ?)';
-        const [rows] = await mysql_execute(connection, query, [
+        const [rows] = await mysqlExecute(connection, query, [
             id,
             from,
             to,
@@ -774,13 +781,13 @@ async function add_transfer_tx(connection, id, from, to) {
     return ret;
 }
 
-async function increase_trade_cnt(connection, id) {
+async function increaseTradeCnt(connection, id) {
     let ret = false;
 
     try {
         const query =
             'UPDATE tbl_item SET trade_cnt = trade_cnt + 1 WHERE id = ?';
-        const [rows] = await mysql_execute(connection, query, [id]);
+        const [rows] = await mysqlExecute(connection, query, [id]);
         ret = rows.affectedRows > 0;
     } catch (err) {
         console.log(err);
@@ -789,14 +796,14 @@ async function increase_trade_cnt(connection, id) {
     return ret;
 }
 
-async function exchange_token(
-    contract_address,
-    token_id,
+async function exchangeToken(
+    contractAddress,
+    tokenID,
     owner,
-    asset_id,
+    assetID,
     amount,
     buyer,
-    block_number
+    blockNumber
 ) {
     let connection = null;
     let ret = false;
@@ -804,163 +811,151 @@ async function exchange_token(
     try {
         connection = await connect();
 
-        await start_transaction(connection);
+        await startTransactions(connection);
 
-        const token = await get_token_by_contract_info(
-            contract_address,
-            token_id
-        );
+        const token = await getTokenByContractInfo(contractAddress, tokenID);
         if (token == null) throw new Error('Not exist token.');
 
-        if (!(await update_token_owner(connection, token.id, buyer))) {
+        if (!(await updateTokenOwner(connection, token.id, buyer))) {
             throw new Error('Updating token owner failed.');
         }
 
         if (
-            !(await add_exchange_tx(
+            !(await addExchangeTx(
                 connection,
                 token.id,
                 owner,
                 buyer,
-                asset_id,
+                assetID,
                 amount
             ))
         ) {
             throw new Error('Adding exchange tx failed.');
         }
 
-        if (!(await increase_trade_cnt(connection, token.id))) {
+        if (!(await increaseTradeCnt(connection, token.id))) {
             throw new Error('Increasing trade cnt failed.');
         }
 
         if (
-            !(await update_sync_block_number(
+            !(await updateSyncBlockNumber(
                 connection,
                 CONST.CONTRACT_TYPE.EXCHANGE,
-                block_number
+                blockNumber
             ))
         ) {
             throw new Error('Updating sync block number failed.');
         }
-        await commit_transaction(connection);
+        await commitTransaction(connection);
         ret = true;
 
         connection.release();
     } catch (err) {
-        await on_connection_err(connection, err, true);
+        await onConnectionErr(connection, err, true);
     }
 
     return ret;
 }
 
-async function transfer_token(
-    contract_address,
-    token_id,
-    from,
-    to,
-    block_number
-) {
+async function transferToken(contractAddress, tokenID, from, to, blockNumber) {
     let connection = null;
     let ret = false;
 
     try {
         connection = await connect();
 
-        await start_transaction(connection);
+        await startTransactions(connection);
 
-        const token = await get_token_by_contract_info(
-            contract_address,
-            token_id
-        );
+        const token = await getTokenByContractInfo(contractAddress, tokenID);
         if (token == null) throw new Error('Not exist token.');
 
-        if (!(await update_token_owner(connection, token.id, to))) {
+        if (!(await updateTokenOwner(connection, token.id, to))) {
             throw new Error('Updating token owner failed.');
         }
 
-        if (!(await add_transfer_tx(connection, token.id, from, to))) {
+        if (!(await addTransferTx(connection, token.id, from, to))) {
             throw new Error('Adding transfer tx failed.');
         }
 
         if (
-            !(await update_sync_block_number(
+            !(await updateSyncBlockNumber(
                 connection,
                 CONST.CONTRACT_TYPE.NFT,
-                block_number
+                blockNumber
             ))
         ) {
             throw new Error('Updating sync block number failed.');
         }
 
-        await commit_transaction(connection);
+        await commitTransaction(connection);
         ret = true;
 
         connection.release();
     } catch (err) {
-        await on_connection_err(connection, err, true);
+        await onConnectionErr(connection, err, true);
     }
 
     return ret;
 }
 
-async function update_other_sync_block_number(contract_type, block_number) {
+async function updateOtherSyncBlockNumber(contractType, blockNumber) {
     let connection = null;
     let ret = false;
 
     try {
         connection = await connect();
 
-        await start_transaction(connection);
+        await startTransactions(connection);
 
-        ret = await update_sync_block_number(
+        ret = await updateSyncBlockNumber(
             connection,
-            contract_type,
-            block_number
+            contractType,
+            blockNumber
         );
 
-        await commit_transaction(connection);
+        await commitTransaction(connection);
 
         connection.release();
     } catch (err) {
-        await on_connection_err(connection, err, true);
+        await onConnectionErr(connection, err, true);
     }
 
     return ret;
 }
 
-async function get_games() {
+async function getGames() {
     let connection = null;
 
     try {
         connection = await connect();
         const query = 'SELECT * FROM tbl_game';
-        const [rows] = await mysql_execute(connection, query);
+        const [rows] = await mysqlExecute(connection, query);
         connection.release();
         return rows;
     } catch (err) {
-        on_connection_err(connection, err);
+        onConnectionErr(connection, err);
     }
 
     return [];
 }
 
-async function get_categories() {
+async function getCategories() {
     let connection = null;
 
     try {
         connection = await connect();
         const query = 'SELECT * from tbl_category';
-        const [rows] = await mysql_execute(connection, query);
+        const [rows] = await mysqlExecute(connection, query);
         connection.release();
         return rows;
     } catch (err) {
-        on_connection_err(connection, err);
+        onConnectionErr(connection, err);
     }
 
     return [];
 }
 
-async function get_items_by_address(address, sort_type, limit, cnt) {
+async function getItemsByAddress(address, sortType, limit, cnt) {
     let connection = null;
 
     try {
@@ -968,10 +963,10 @@ async function get_items_by_address(address, sort_type, limit, cnt) {
         const query =
             'SELECT tbl_item.*, tbl_category.name as category_name from tbl_item ' +
             'LEFT JOIN tbl_category ON tbl_item.category_id = tbl_category.id ' +
-            'WHERE is_burnt = 0 AND owner = ? ' +
-            get_order_by_clause(sort_type) +
-            ' LIMIT ?, ?';
-        const [rows] = await mysql_execute(connection, query, [
+            `WHERE is_burnt = 0 AND owner = ? ${getOrderByClause(
+                sortType
+            )} LIMIT ?, ?`;
+        const [rows] = await mysqlExecute(connection, query, [
             address,
             limit,
             cnt,
@@ -979,13 +974,13 @@ async function get_items_by_address(address, sort_type, limit, cnt) {
         connection.release();
         return rows;
     } catch (err) {
-        on_connection_err(connection, err);
+        onConnectionErr(connection, err);
     }
 
     return [];
 }
 
-async function get_items_by_address_cnt(address) {
+async function getItemsByAddressCnt(address) {
     let connection = null;
 
     try {
@@ -993,17 +988,17 @@ async function get_items_by_address_cnt(address) {
         const query =
             'SELECT COUNT(id) as total from tbl_item ' +
             'WHERE is_burnt = 0 AND owner = ?';
-        const [rows] = await mysql_execute(connection, query, [address]);
+        const [rows] = await mysqlExecute(connection, query, [address]);
         connection.release();
         return rows[0].total;
     } catch (err) {
-        on_connection_err(connection, err);
+        onConnectionErr(connection, err);
     }
 
     return 0;
 }
 
-async function get_market_items(game, category, sort_type, limit, cnt) {
+async function getMarketItems(game, category, sortType, limit, cnt) {
     let connection = null;
 
     try {
@@ -1013,32 +1008,32 @@ async function get_market_items(game, category, sort_type, limit, cnt) {
             'SELECT tbl_item.*, tbl_category.name as category_name from tbl_item ' +
             'LEFT JOIN tbl_category ON tbl_item.category_id = tbl_category.id ' +
             'WHERE is_visible = ? AND is_burnt = 0';
-        let params = [CONST.VISIBILITY_STATUS.SHOW];
+        const params = [CONST.VISIBILITY_STATUS.SHOW];
 
-        if (game != 0) {
+        if (game !== 0) {
             query += ' AND tbl_item.game_id = ?';
             params.push(game);
         }
 
-        if (category != 0) {
+        if (category !== 0) {
             query += ' AND category_id = ?';
             params.push(category);
         }
 
-        query += ` ${get_order_by_clause(sort_type)} LIMIT ?, ?`;
+        query += ` ${getOrderByClause(sortType)} LIMIT ?, ?`;
         params.push(limit);
         params.push(cnt);
-        const [rows] = await mysql_execute(connection, query, params);
+        const [rows] = await mysqlExecute(connection, query, params);
         connection.release();
         return rows;
     } catch (err) {
-        on_connection_err(connection, err);
+        onConnectionErr(connection, err);
     }
 
     return [];
 }
 
-async function get_market_items_cnt(game, category) {
+async function getMarketItemsCnt(game, category) {
     let connection = null;
 
     try {
@@ -1047,29 +1042,29 @@ async function get_market_items_cnt(game, category) {
         let query =
             'SELECT COUNT(id) as total from tbl_item ' +
             'WHERE is_visible = ? AND is_burnt = 0';
-        let params = [CONST.VISIBILITY_STATUS.SHOW];
+        const params = [CONST.VISIBILITY_STATUS.SHOW];
 
-        if (game != 0) {
+        if (game !== 0) {
             query += ' AND tbl_item.game_id = ?';
             params.push(game);
         }
 
-        if (category != 0) {
+        if (category !== 0) {
             query += ' AND category_id = ?';
             params.push(category);
         }
 
-        const [rows] = await mysql_execute(connection, query, params);
+        const [rows] = await mysqlExecute(connection, query, params);
         connection.release();
         return rows[0].total;
     } catch (err) {
-        on_connection_err(connection, err);
+        onConnectionErr(connection, err);
     }
 
     return 0;
 }
 
-async function insert_likes(discussion_id, parent_id, user) {
+async function insertLikes(discussionID, parentID, user) {
     let connection = null;
     let ret = false;
 
@@ -1079,22 +1074,22 @@ async function insert_likes(discussion_id, parent_id, user) {
         const query =
             'INSERT INTO tbl_likes ' +
             '(discussion_id, parent_id, user) VALUE(?, ?, ?)';
-        const [rows] = await mysql_execute(connection, query, [
-            discussion_id,
-            parent_id,
+        const [rows] = await mysqlExecute(connection, query, [
+            discussionID,
+            parentID,
             user,
         ]);
         ret = rows.insertId > 0;
 
         connection.release();
     } catch (err) {
-        on_connection_err(connection, err);
+        onConnectionErr(connection, err);
     }
 
     return ret;
 }
 
-async function delete_likes(discussion_id, parent_id, user) {
+async function deleteLikes(discussionID, parentID, user) {
     let connection = null;
     let ret = false;
 
@@ -1104,22 +1099,22 @@ async function delete_likes(discussion_id, parent_id, user) {
         const query =
             'DELETE FROM tbl_likes ' +
             'WHERE discussion_id LIKE ? AND parent_id LIKE ? AND user LIKE ?';
-        const [rows] = await mysql_execute(connection, query, [
-            discussion_id,
-            parent_id,
+        const [rows] = await mysqlExecute(connection, query, [
+            discussionID,
+            parentID,
             user,
         ]);
         ret = rows.affectedRows > 0;
 
         connection.release();
     } catch (err) {
-        on_connection_err(connection, err);
+        onConnectionErr(connection, err);
     }
 
     return ret;
 }
 
-async function get_likes(discussion_id, parent_id, user) {
+async function getLikes(discussionID, parentID, user) {
     let connection = null;
 
     try {
@@ -1127,21 +1122,21 @@ async function get_likes(discussion_id, parent_id, user) {
         const query =
             'SELECT id from tbl_likes ' +
             'WHERE discussion_id LIKE ? AND parent_id LIKE ? AND user LIKE ?';
-        const [rows] = await mysql_execute(connection, query, [
-            discussion_id,
-            parent_id,
+        const [rows] = await mysqlExecute(connection, query, [
+            discussionID,
+            parentID,
             user,
         ]);
         connection.release();
         return rows;
     } catch (err) {
-        on_connection_err(connection, err);
+        onConnectionErr(connection, err);
     }
 
     return [];
 }
 
-async function get_likes_count(discussion_id, parent_id) {
+async function getLikesCount(discussionID, parentID) {
     let connection = null;
 
     try {
@@ -1149,72 +1144,49 @@ async function get_likes_count(discussion_id, parent_id) {
         const query =
             'SELECT COUNT(id) as total from tbl_likes ' +
             'WHERE discussion_id LIKE ? AND parent_id LIKE ?';
-        const [rows] = await mysql_execute(connection, query, [
-            discussion_id,
-            parent_id,
+        const [rows] = await mysqlExecute(connection, query, [
+            discussionID,
+            parentID,
         ]);
         connection.release();
         return rows[0].total;
     } catch (err) {
-        on_connection_err(connection, err);
+        onConnectionErr(connection, err);
     }
 
     return 0;
 }
 
-function get_order_by_clause(sort_type) {
-    switch (sort_type) {
-        case CONST.SORT_TYPE.PRICE_HIGH_LOW:
-            return 'ORDER BY arcadedoge_price DESC';
-        case CONST.SORT_TYPE.PRICE_LOW_HIGH:
-            return 'ORDER BY arcadedoge_price ASC';
-        case CONST.SORT_TYPE.POPULAR:
-            return 'ORDER BY trade_cnt DESC';
-        case CONST.SORT_TYPE.RECENT:
-        default:
-            return 'ORDER BY updated_at DESC';
-    }
-}
-
-async function mysql_execute(connection, query, params = []) {
-    // let stringify_params = [];
-    // for (let i = 0; i < params.length; i++) {
-    //     stringify_params.push(params[i].toString());
-    // }
-
-    return await connection.query(query, params);
-}
-
 module.exports = {
-    get_stuff,
-    get_discussion,
-    get_comment,
-    get_discussion_by_id,
-    add_discussion,
-    add_comment,
-    mint_token,
-    get_sync_block_number,
-    get_token_by_id,
-    update_token_by_id,
-    get_token_by_tokenid,
-    get_token_by_contract_info,
-    burn_token,
-    sell_token,
-    cancel_sell_token,
-    exchange_token,
-    transfer_token,
-    get_games,
-    get_categories,
-    get_items_by_address,
-    get_items_by_address_cnt,
-    get_market_items,
-    get_market_items_cnt,
-    update_other_sync_block_number,
-    get_discussion_by_keyword,
-    insert_likes,
-    delete_likes,
-    get_likes,
-    get_likes_count,
-    get_discussion_cnt,
-    get_comment_by_id,
+    getStuff,
+    getDiscussion,
+    getComment,
+    getDiscussionByID,
+    addDiscussion,
+    addComment,
+    mintToken,
+    getSyncBlockNumber,
+    getTokenByID,
+    updateTokenByID,
+    getTokenByTokenID,
+    getTokenByContractInfo,
+    burnToken,
+    sellToken,
+    cancelSellToken,
+    exchangeToken,
+    transferToken,
+    getGames,
+    getCategories,
+    getItemsByAddress,
+    getItemsByAddressCnt,
+    getMarketItems,
+    getMarketItemsCnt,
+    updateOtherSyncBlockNumber,
+    getDiscussionByKeyword,
+    insertLikes,
+    deleteLikes,
+    getLikes,
+    getLikesCount,
+    getDiscussionCnt,
+    getCommentByID,
 };

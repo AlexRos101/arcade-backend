@@ -1,4 +1,4 @@
-const mysql_config = {
+const mysqlConfig = {
     host: 'localhost',
     user: 'root',
     password: '',
@@ -6,4 +6,4 @@ const mysql_config = {
     connectionLimit: 100,
 };
 
-module.exports = mysql_config;
+module.exports = mysqlConfig;
