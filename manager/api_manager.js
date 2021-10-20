@@ -1,12 +1,12 @@
-const config = require('../common/config');
-const database_manager = require('./database_manager');
 const mv = require('mv');
 const Unrar = require('unrar');
 const yauzl = require('yauzl');
+const database_manager = require('./database_manager');
+const config = require('../common/config');
 
 function register_apis(app) {
     app.post('/stuff/all', async (req, res) => {
-        let stuffs = await database_manager.get_stuff(null);
+        const stuffs = await database_manager.get_stuff(null);
 
         for (let i = 0; i < stuffs.length; i++) {
             const stuff = stuffs[i];
@@ -34,17 +34,18 @@ function register_apis(app) {
     });
 
     app.post('/stuff/search', async (req, res) => {
-        const keyword = req.fields.keyword;
-        let stuffs = await database_manager.get_stuff(null);
+        const { keyword } = req.fields;
+        const stuffs = await database_manager.get_stuff(null);
 
         for (let i = 0; i < stuffs.length; i++) {
             const stuff = stuffs[i];
-            const discussions = await database_manager.get_discussion_by_keyword(
-                stuff.id,
-                0,
-                3,
-                keyword
-            );
+            const discussions =
+                await database_manager.get_discussion_by_keyword(
+        stuff.id,
+                    0,
+        3,
+        keyword,
+      );
             stuffs[i].discussions = discussions;
         }
 
@@ -57,7 +58,7 @@ function register_apis(app) {
     });
 
     app.post('/stuff', async (req, res) => {
-        const id = req.fields.id;
+        const { id } = req.fields;
 
         const stuff = await database_manager.get_stuff(id);
 
@@ -70,11 +71,15 @@ function register_apis(app) {
     });
 
     app.post('/discussion/all/', async (req, res) => {
-        const id = req.fields.id;
-        const limit = req.fields.limit;
-        const cnt = req.fields.cnt;
+        const { id } = req.fields;
+        const { limit } = req.fields;
+        const { cnt } = req.fields;
 
-        let discussions = await database_manager.get_discussion(id, limit, cnt);
+        const discussions = await database_manager.get_discussion(
+      id,
+      limit,
+      cnt,
+    );
         for (let i = 0; i < discussions.length; i++) {
             const likes_count = await database_manager.get_likes_count(
                 discussions[i].id,
@@ -95,13 +100,13 @@ function register_apis(app) {
     });
 
     app.post('/discussion', async (req, res) => {
-        const id = req.fields.id;
-        const account = req.fields.account;
-        const limit = req.fields.limit;
-        const cnt = req.fields.cnt;
+        const { id } = req.fields;
+        const { account } = req.fields;
+        const { limit } = req.fields;
+        const { cnt } = req.fields;
         let total = 0;
 
-        let discussion = await database_manager.get_discussion_by_id(id);
+        const discussion = await database_manager.get_discussion_by_id(id);
         const likes_count = await database_manager.get_likes_count(
             discussion.id,
             -1
@@ -174,16 +179,16 @@ function register_apis(app) {
     });
 
     app.post('/discussion/new', async (req, res) => {
-        const stuff_id = req.fields.stuff_id;
-        const content = req.fields.content;
-        const user_type = req.fields.user_type;
-        const user = req.fields.user;
+        const { stuff_id } = req.fields;
+        const { content } = req.fields;
+        const { user_type } = req.fields;
+        const { user } = req.fields;
 
         if (
             !isValidDiscussionParams({
                 stuff_id: stuff_id,
-                content: content,
-                user_type: user_type,
+                content,
+                user_type,
                 user: user,
             })
         ) {
@@ -207,9 +212,9 @@ function register_apis(app) {
     });
 
     app.post('/comment', async (req, res) => {
-        const id = req.fields.id;
+        const { id } = req.fields;
 
-        let result = await database_manager.get_comment_by_id(id);
+        const result = await database_manager.get_comment_by_id(id);
 
         const likes_count = await database_manager.get_likes_count(
             result.discussion_id,
@@ -226,18 +231,18 @@ function register_apis(app) {
     });
 
     app.post('/comment/new', async (req, res) => {
-        const discussion_id = req.fields.discussion_id;
-        const parent_id = req.fields.parent_id;
-        const content = req.fields.content;
-        const user_type = req.fields.user_type;
-        const user = req.fields.user;
+        const { discussion_id } = req.fields;
+        const { parent_id } = req.fields;
+        const { content } = req.fields;
+        const { user_type } = req.fields;
+        const { user } = req.fields;
 
         if (
             !isValidCommentParams({
-                discussion_id: discussion_id,
+                discussion_id,
                 parent_id: parent_id,
                 content: content,
-                user_type: user_type,
+                user_type,
                 user: user,
             })
         ) {
@@ -273,9 +278,9 @@ function register_apis(app) {
     });
 
     app.post('/set_likes', async (req, res) => {
-        const discussion_id = req.fields.discussion_id;
-        const parent_id = req.fields.parent_id;
-        const user = req.fields.user;
+        const { discussion_id } = req.fields;
+        const { parent_id } = req.fields;
+        const { user } = req.fields;
         const likesOrUnlikes = req.fields.likes;
         let result = {};
         if (likesOrUnlikes == true) {
@@ -301,9 +306,9 @@ function register_apis(app) {
     });
 
     app.post('/get_likes', async (req, res) => {
-        const discussion_id = req.fields.discussion_id;
-        const parent_id = req.fields.parent_id;
-        const user = req.fields.user;
+        const { discussion_id } = req.fields;
+        const { parent_id } = req.fields;
+        const { user } = req.fields;
 
         const result = await database_manager.get_likes(
             discussion_id,
@@ -331,10 +336,10 @@ function register_apis(app) {
     });
 
     app.post('/get_items_by_address', async (req, res) => {
-        const address = req.fields.address;
+        const { address } = req.fields;
         const sort_type = req.fields.sort;
-        const limit = req.fields.limit;
-        const cnt = req.fields.cnt;
+        const { limit } = req.fields;
+        const { cnt } = req.fields;
 
         if (
             address == null ||
@@ -358,18 +363,18 @@ function register_apis(app) {
         const ret = {
             result: true,
             data: result,
-            total: total,
+            total,
         };
 
         response(ret, res);
     });
 
     app.post('/get_market_items', async (req, res) => {
-        const game = req.fields.game;
-        const category = req.fields.category;
+        const { game } = req.fields;
+        const { category } = req.fields;
         const sort_type = req.fields.sort;
-        const limit = req.fields.limit;
-        const cnt = req.fields.cnt;
+        const { limit } = req.fields;
+        const { cnt } = req.fields;
 
         if (
             game == null ||
@@ -389,7 +394,10 @@ function register_apis(app) {
             limit,
             cnt
         );
-        const total = await database_manager.get_market_items_cnt(game, category);
+        const total = await database_manager.get_market_items_cnt(
+            game,
+            category
+        );
         const ret = {
             result: true,
             data: result,
@@ -400,7 +408,7 @@ function register_apis(app) {
     });
 
     app.post('/get_item_by_id', async (req, res) => {
-        const id = req.fields.id;
+        const { id } = req.fields;
 
         if (id == null) {
             response_invalid(res);
@@ -418,13 +426,13 @@ function register_apis(app) {
     });
 
     app.post('/update_item_by_id', async (req, res) => {
-        const id = req.fields.id;
-        const game_id = req.fields.game_id;
-        const category_id = req.fields.category_id;
-        const name = req.fields.name;
-        const is_anonymous = req.fields.is_anonymous;
-        const description = req.fields.description;
-        const price = req.fields.price;
+        const { id } = req.fields;
+        const { game_id } = req.fields;
+        const { category_id } = req.fields;
+        const { name } = req.fields;
+        const { is_anonymous } = req.fields;
+        const { description } = req.fields;
+        const { price } = req.fields;
 
         if (id == null) {
             response_invalid(res);
@@ -468,7 +476,7 @@ function register_apis(app) {
     });
 
     app.post('/upload_material', async (req, res) => {
-        const files = req.files;
+        const { files } = req;
         if (files.myFile == null) {
             response({ result: false }, res);
             return;
@@ -490,7 +498,7 @@ function register_apis(app) {
 
         const oldpath = files.myFile.path;
         const newpath = config.material_path + files.myFile.name;
-        mv(oldpath, newpath, async function (err) {
+        mv(oldpath, newpath, async (err) => {
             if (err) {
                 console.log(err);
                 response({ result: false }, res);
@@ -500,41 +508,40 @@ function register_apis(app) {
             if (newpath.slice(newpath.length - 4, newpath.length) == '.rar') {
                 const archive = new Unrar(newpath);
 
-                archive.list(function (err, entries) {
-                    for (let i = 0; i < entries.length; i++) {
-                        const name = entries[i].name;
-                        const type = entries[i].type;
-                        if (type == 'File' && name == 'thumbnail.png') {
-                            const stream = archive.stream('thumbnail.png'); // name of entry
-                            stream.on('error', () => {
-                                response({ result: false });
-                            });
-                            stream.pipe(
-                                require('fs').createWriteStream(
-                                    config.thumbnail_path +
-                                        files.myFile.name.slice(
-                                            0,
-                                            files.myFile.name.length - 4
-                                        ) +
-                                        '.png'
-                                )
-                            );
+                archive.list((err, entries) => {
+          for (let i = 0; i < entries.length; i++) {
+            const { name } = entries[i];
+            const { type } = entries[i];
+            if (type == 'File' && name == 'thumbnail.png') {
+              const stream = archive.stream('thumbnail.png'); // name of entry
+              stream.on('error', () => {
+                response({ result: false });
+              });
+              stream.pipe(
+                require('fs').createWriteStream(
+                  config.thumbnail_path
+                                        + files.myFile.name.slice(
+                                          0,
+                                          files.myFile.name.length - 4,
+                                        )
+                                        + '.png',
+                ),
+              );
 
-                            response({ result: true }, res);
-                            return;
-                        }
-                    }
+              response({ result: true }, res);
+              return;
+            }
+          }
 
-                    response(
-                        {
-                            result: false,
-                            code: -1,
-                            msg: 'Not exist thumbnail file.',
-                        },
-                        res
-                    );
-                    return;
-                });
+          response(
+            {
+              result: false,
+              code: -1,
+              msg: 'Not exist thumbnail file.',
+            },
+            res,
+          );
+        });
             } else if (
                 newpath.slice(newpath.length - 4, newpath.length) == '.zip'
             ) {

@@ -40,32 +40,31 @@ async function on_connection_err(connection, err, is_roll_back = false) {
 }
 
 async function get_stuff(stuff_id) {
-    let connection = null;
-    try {
-        connection = await connect();
+  let connection = null;
+  try {
+    connection = await connect();
 
-        let rows = null;
+    let rows = null;
 
-        if (stuff_id == null || stuff_id == '') {
-            const query = 'SELECT * from tbl_stuff';
-            [rows] = await mysql_execute(connection, query);
+    if (stuff_id == null || stuff_id == '') {
+      const query = 'SELECT * from tbl_stuff';
+      [rows] = await mysql_execute(connection, query);
 
-            connection.release();
-            return rows;
-        } else {
-            const query = 'SELECT * from tbl_stuff WHERE id LIKE ?';
-            [rows] = await mysql_execute(connection, query, [stuff_id]);
-
-            connection.release();
-            if (rows.length == 0) return null;
-
-            return rows[0];
-        }
-    } catch (err) {
-        on_connection_err(connection, err);
+      connection.release();
+      return rows;
     }
+        const query = 'SELECT * from tbl_stuff WHERE id LIKE ?';
+        [rows] = await mysql_execute(connection, query, [stuff_id]);
 
-    return null;
+        connection.release();
+        if (rows.length == 0) return null;
+
+    return rows[0];
+    } catch (err) {
+    on_connection_err(connection, err);
+  }
+
+  return null;
 }
 
 async function get_discussion_cnt(stuff_id) {
@@ -201,7 +200,8 @@ async function get_comment(discussion_id) {
             const query = 'SELECT * from tbl_comment';
             [rows] = await mysql_execute(connection, query);
         } else {
-            const query = 'SELECT * from tbl_comment WHERE discussion_id LIKE ?';
+            const query =
+                'SELECT * from tbl_comment WHERE discussion_id LIKE ?';
             [rows] = await mysql_execute(connection, query, [discussion_id]);
         }
 
@@ -436,7 +436,9 @@ async function update_token_by_id(
         connection = await connect();
 
         const query =
-            'UPDATE tbl_item SET game_id=?, category_id=?, name=?, description=?, is_anonymous=?, arcadedoge_price=? WHERE id = ?';
+            'UPDATE tbl_item ' +
+            'SET game_id=?, category_id=?, name=?, description=?, is_anonymous=?, arcadedoge_price=? ' +
+            'WHERE id = ?';
         const [rows] = await mysql_execute(connection, query, [
             game_id,
             category_id,
@@ -601,7 +603,10 @@ async function update_token_visible(
             ret = rows.affectedRows > 0;
         } else if (visible == CONST.VISIBILITY_STATUS.HIDDEN) {
             const query = 'UPDATE tbl_item SET is_visible = ? WHERE id = ?';
-            const [rows] = await mysql_execute(connection, query, [visible, id]);
+            const [rows] = await mysql_execute(connection, query, [
+                visible,
+                id,
+            ]);
             ret = rows.affectedRows > 0;
         }
     } catch (err) {
@@ -1020,7 +1025,7 @@ async function get_market_items(game, category, sort_type, limit, cnt) {
             params.push(category);
         }
 
-        query += ' ' + get_order_by_clause(sort_type) + ' LIMIT ?, ?';
+        query += ` ${get_order_by_clause(sort_type)} LIMIT ?, ?`;
         params.push(limit);
         params.push(cnt);
         const [rows] = await mysql_execute(connection, query, params);

@@ -1,12 +1,12 @@
-const config = require('./common/config');
-const database_manager = require('./manager/database_manager');
 const erc721_decoder = require('abi-decoder');
-const erc721_abi = require('./contracts/ERC721.json');
 const exchange_decoder = require('abi-decoder');
-const exchange_abi = require('./contracts/EXCHANGE.json');
-const CONST = require('./common/constants');
 const axios = require('axios');
 const Web3 = require('web3');
+const config = require('./common/config');
+const database_manager = require('./manager/database_manager');
+const erc721_abi = require('./contracts/ERC721.json');
+const exchange_abi = require('./contracts/EXCHANGE.json');
+const CONST = require('./common/constants');
 
 erc721_decoder.addABI(erc721_abi);
 exchange_decoder.addABI(exchange_abi);
@@ -15,7 +15,7 @@ async function sync_blocks() {
     await sync_nft_blocks();
     await sync_exchange_blocks();
 
-    setTimeout(function () {
+    setTimeout(() => {
         sync_blocks();
     }, config.service_delay);
 }
@@ -23,13 +23,13 @@ async function sync_blocks() {
 async function sync_nft_blocks() {
     console.log('Sycnronizing NFT blocks');
 
-    let block_number = await database_manager.get_sync_block_number(
-        CONST.CONTRACT_TYPE.NFT
-    );
+    const block_number = await database_manager.get_sync_block_number(
+    CONST.CONTRACT_TYPE.NFT,
+  );
 
-    let history_url = config.history_url;
+    let { history_url } = config;
     history_url = history_url.replace('CONTRACT_ADDRESS', config.contract_nft);
-    history_url = history_url.replace('START_BLOCK', block_number + 1 + '');
+    history_url = history_url.replace('START_BLOCK', `${block_number + 1}`);
 
     let history_data = null;
     try {
@@ -141,14 +141,14 @@ async function sync_exchange_blocks() {
         CONST.CONTRACT_TYPE.EXCHANGE
     );
 
-    let history_url = config.history_url;
+    let { history_url } = config;
     history_url = history_url.replace(
         'CONTRACT_ADDRESS',
         config.contract_exchange
     );
     history_url = history_url.replace(
         'START_BLOCK',
-        sync_block_number + 1 + ''
+    `${sync_block_number + 1}`,
     );
 
     let history_data = null;
