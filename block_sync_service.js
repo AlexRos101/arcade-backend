@@ -37,7 +37,19 @@ async function syncNFTBlocks() {
             const transaction = transactions[j];
 
             if (transaction.isError === '1') {
-                continue;
+                if (transaction.isError === '1') {
+                    if (
+                        !(await databaseManager.updateOtherSyncBlockNumber(
+                            CONST.CONTRACT_TYPE.NFT,
+                            transaction.blockNumber
+                        ))
+                    ) {
+                        throw new Error(
+                            `Synchronizing failed. TxHash: ${transaction.hash}`
+                        );
+                    }
+                    continue;
+                }
             }
 
             const decodedData = erc721Decoder.decodeMethod(transaction.input);
@@ -157,7 +169,19 @@ async function syncExchangeBlocks() {
         for (let j = 0; j < transactions.length; j++) {
             const transaction = transactions[j];
 
-            if (transaction.isError === '1') continue;
+            if (transaction.isError === '1') {
+                if (
+                    !(await databaseManager.updateOtherSyncBlockNumber(
+                        CONST.CONTRACT_TYPE.EXCHANGE,
+                        transaction.blockNumber
+                    ))
+                ) {
+                    throw new Error(
+                        `Synchronizing failed. TxHash: ${transaction.hash}`
+                    );
+                }
+                continue;
+            }
 
             const decodedData = exchangeDecoder.decodeMethod(transaction.input);
 
