@@ -193,7 +193,7 @@ function registerAPIs(app) {
                 comments[i].likes = commentLikesCount;
 
                 if (account !== '' && account !== undefined) {
-                    comments[i].user_like = await databaseManager.get_likes(
+                    comments[i].user_like = await databaseManager.getLikes(
                         comments[i].discussion_id,
                         comments[i].id,
                         account
