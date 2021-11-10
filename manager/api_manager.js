@@ -2,6 +2,7 @@ const mv = require('mv');
 const Unrar = require('unrar');
 const yauzl = require('yauzl');
 const fs = require('fs');
+const ethers = require('ethers');
 const databaseManager = require('./database_manager');
 const config = require('../common/config');
 
@@ -20,7 +21,13 @@ function responseInvalid(res) {
     response(ret, res);
 }
 
-function isValidDiscussionParams(params) {
+async function checkSign(text, signature, account) {
+    const signAddress = await ethers.utils.verifyMessage(text, signature)
+  
+    return (signAddress === account)
+}
+
+async function isValidDiscussionParams(params) {
     if (params.stuff_id == null || params.stuff_id <= 0) {
         return false;
     }
@@ -33,11 +40,11 @@ function isValidDiscussionParams(params) {
     if (params.user_type === 0 && (params.user == null || params.user === '')) {
         return false;
     }
-
-    return true;
+    
+    return await checkSign(params.content, params.signature, params.account);
 }
 
-function isValidCommentParams(params) {
+async function isValidCommentParams(params) {
     if (params.discussion_id == null || params.discussion_id <= 0) {
         return false;
     }
@@ -56,8 +63,10 @@ function isValidCommentParams(params) {
         return false;
     }
 
-    return true;
+    return await checkSign(params.content, params.signature, params.account);
 }
+
+
 
 function registerAPIs(app) {
     app.post('/stuff/all', async (req, res) => {
@@ -235,14 +244,18 @@ function registerAPIs(app) {
         /* eslint-disable-next-line camelcase */
         const { user_type } = req.fields;
         const { user } = req.fields;
+        const { signature } = req.fields;
+        const { account } = req.fields;
 
         if (
-            !isValidDiscussionParams({
+            await isValidDiscussionParams({
                 stuff_id,
                 content,
                 user_type,
                 user,
-            })
+                signature,
+                account
+            }) === false
         ) {
             responseInvalid(res);
             return;
@@ -291,15 +304,19 @@ function registerAPIs(app) {
         /* eslint-disable-next-line camelcase */
         const { user_type } = req.fields;
         const { user } = req.fields;
+        const { signature } = req.fields;
+        const { account } = req.fields;
 
         if (
-            !isValidCommentParams({
+            await isValidCommentParams({
                 discussion_id,
                 parent_id,
                 content,
                 user_type,
                 user,
-            })
+                signature,
+                account
+            }) === false
         ) {
             responseInvalid(res);
             return;
