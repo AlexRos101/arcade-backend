@@ -16,7 +16,7 @@ const config = {
     contractBUSD: '0x8301f2213c0eed49a7e28ae4c3e91722919b8b47',
 
     backendKey: 'ArcadeDogeBackend',
-    gameBackendUrl: 'http://localhost:4001'
+    gameBackendUrl: 'http://localhost:4001',
 };
 
 module.exports = config;

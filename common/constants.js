@@ -57,8 +57,8 @@ const RET_CODE = {
     NOT_REGISTERED_WALLET_ADDRESS: 100,
     INSUFFICIANT_BALANCE: 101,
     INVALID_PARAMETERS: 102,
-    NOT_INITIALIZED: 103
-}
+    NOT_INITIALIZED: 103,
+};
 
 module.exports = {
     ERC721_FUNCTION_NAME,
@@ -70,5 +70,5 @@ module.exports = {
     CONTRACT_TYPE,
     SORT_TYPE,
     MYSQL_ERR_NO,
-    RET_CODE
+    RET_CODE,
 };
