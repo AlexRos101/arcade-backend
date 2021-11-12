@@ -2,8 +2,11 @@ const mv = require('mv');
 const Unrar = require('unrar');
 const yauzl = require('yauzl');
 const fs = require('fs');
+const { soliditySha3 } = require('web3-utils');
 const databaseManager = require('./database_manager');
 const config = require('../common/config');
+const gameAPI = require('../adapter/game_api');
+const CONST = require('../common/constants');
 
 function response(ret, res) {
     res.setHeader('content-type', 'text/plain');
@@ -675,6 +678,49 @@ function registerAPIs(app) {
                 );
             }
         });
+    });
+
+    app.post('/verify/swap_request', async (req, res) => {
+        const id = req.fields.id;
+        const address = req.fields.address;
+        const amount = req.fields.amount;
+
+        if (
+            id === null ||
+            !address ||
+            amount === null
+        ) {
+            responseInvalid(res);
+            return;
+        }
+
+        const gameBackendVerification = await gameAPI.verifySwapRequest(
+            address,
+            amount
+        );
+
+        if (gameBackendVerification.result === CONST.RET_CODE.SUCCESS) {
+            const backendSign = soliditySha3(
+                gameBackendVerification.data.verification_token,
+                soliditySha3(config.backendKey)
+            );
+
+            response(
+                {
+                    result: true,
+                    verification_token: backendSign,
+                },
+                res
+            );
+        } else {
+            response(
+                {
+                    result: false,
+                    msg: gameBackendVerification.msg,
+                },
+                res
+            );
+        }
     });
 }
 module.exports = registerAPIs;
