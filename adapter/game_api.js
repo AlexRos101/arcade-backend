@@ -1,25 +1,48 @@
+const { reject } = require('async');
+const FormData = require('form-data');
 const config = require('../common/config');
 
-async function sendPost (requestUrl, params) {
-    const requestOptions = {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(params),
-    }
+function sendPost (requestUrl, params) {
+    const axios = require('axios');
 
-    var response = 
-        await fetch(config.gameBackendUrl + requestUrl, requestOptions);
-    return response.json();
+    return new Promise((resolve, reject) => {
+        axios({
+            method: 'post',
+            url: config.gameBackendUrl + requestUrl,
+            data: params,
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then((response) => {
+            resolve(response.data);
+        })
+        .catch((error) => {
+            reject(error);
+        });
+    });
 }
 
-export async function verifySwapRequest(address, amount) {
-    const response = await sendPost(
-        'verify/swap-game-point',
-        {
-            address: address,
-            amount: amount
-        }
-    );
+function verifySwapRequest(address, amount) {
+    // let formData = new FormData();
+    // formData.append('address', address);
+    // formData.append('amount', amount);
+    
+    return new Promise((resolve, reject) => {
+        sendPost(
+            '/verify/swap-game-point',
+            {
+                address: address,
+                amount: amount
+            }
+        )
+        .then((res) => {
+            resolve(res);
+        })
+        .catch((err) => {
+            reject(err);
+        })
+    });
+}
 
-    return response;
+module.exports = {
+    verifySwapRequest
 }
