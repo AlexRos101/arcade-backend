@@ -27,13 +27,13 @@ function isValidDiscussionParams(params) {
     if (params.stuff_id == null || params.stuff_id <= 0) {
         return false;
     }
-    if (params.content == null || params.content === '') {
+    if (!params.content) {
         return false;
     }
     if (params.user_type !== 0 && params.user_type !== 1) {
         return false;
     }
-    if (params.user_type === 0 && (params.user == null || params.user === '')) {
+    if (params.user_type === 0 && !params.user) {
         return false;
     }
 
@@ -49,13 +49,13 @@ function isValidCommentParams(params) {
         return false;
     }
 
-    if (params.content == null || params.content === '') {
+    if (!params.content) {
         return false;
     }
     if (params.user_type !== 0 && params.user_type !== 1) {
         return false;
     }
-    if (params.user_type === 0 && (params.user == null || params.user === '')) {
+    if (params.user_type === 0 && !params.user) {
         return false;
     }
 
@@ -405,8 +405,7 @@ function registerAPIs(app) {
         const { cnt } = req.fields;
 
         if (
-            address === null ||
-            address === '' ||
+            !address ||
             /* eslint-disable-next-line camelcase */
             sort_type === null ||
             limit === null ||
