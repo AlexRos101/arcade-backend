@@ -205,7 +205,7 @@ async function syncExchangeBlocks() {
                                 `${decodedData.params[2].value}`,
                                 'ether'
                             ),
-                            transaction.blockNumber,
+                            transaction.blockNumber
                         ))
                     ) {
                         result = false;

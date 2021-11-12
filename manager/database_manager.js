@@ -338,7 +338,7 @@ async function addMintTx(connection, id, item, txid, timestamp) {
             item.owner,
             item.owner,
             CONST.TX_TYPE.MINT,
-            timestamp
+            timestamp,
         ]);
         ret = rows.insertId > 0;
     } catch (err) {
@@ -551,7 +551,7 @@ async function addBurnTx(connection, item, txid, timestamp) {
             item.owner,
             item.owner,
             CONST.TX_TYPE.BUNRT,
-            timestamp
+            timestamp,
         ]);
         ret = rows.insertId > 0;
     } catch (err) {
@@ -561,7 +561,13 @@ async function addBurnTx(connection, item, txid, timestamp) {
     return ret;
 }
 
-async function burnToken(contractAddress, tokenID, txid, blockNumber, timestamp) {
+async function burnToken(
+    contractAddress,
+    tokenID,
+    txid,
+    blockNumber,
+    timestamp
+) {
     let connection = null;
     let ret = false;
 
@@ -637,7 +643,7 @@ async function sellToken(
     contractAddress,
     tokenID,
     arcadedogePrice,
-    blockNumber,
+    blockNumber
 ) {
     let connection = null;
     let ret = false;
@@ -740,7 +746,16 @@ async function updateTokenOwner(connection, id, owner) {
     return ret;
 }
 
-async function addExchangeTx(connection, id, from, to, assetID, amount, txid, timestamp) {
+async function addExchangeTx(
+    connection,
+    id,
+    from,
+    to,
+    assetID,
+    amount,
+    txid,
+    timestamp
+) {
     let ret = false;
 
     try {
@@ -756,7 +771,7 @@ async function addExchangeTx(connection, id, from, to, assetID, amount, txid, ti
             assetID,
             amount,
             CONST.TX_TYPE.EXCHANGE,
-            timestamp
+            timestamp,
         ]);
         ret = rows.insertId > 0;
     } catch (err) {
@@ -779,7 +794,7 @@ async function addTransferTx(connection, id, from, to, txid, timestamp) {
             from,
             to,
             CONST.TX_TYPE.EXCHANGE,
-            timestamp
+            timestamp,
         ]);
         ret = rows.insertId > 0;
     } catch (err) {
@@ -869,7 +884,15 @@ async function exchangeToken(
     return ret;
 }
 
-async function transferToken(contractAddress, tokenID, from, to, txid, blockNumber, timestamp) {
+async function transferToken(
+    contractAddress,
+    tokenID,
+    from,
+    to,
+    txid,
+    blockNumber,
+    timestamp
+) {
     let connection = null;
     let ret = false;
 
@@ -885,7 +908,16 @@ async function transferToken(contractAddress, tokenID, from, to, txid, blockNumb
             throw new Error('Updating token owner failed.');
         }
 
-        if (!(await addTransferTx(connection, token.id, from, to, txid, timestamp))) {
+        if (
+            !(await addTransferTx(
+                connection,
+                token.id,
+                from,
+                to,
+                txid,
+                timestamp
+            ))
+        ) {
             throw new Error('Adding transfer tx failed.');
         }
 
