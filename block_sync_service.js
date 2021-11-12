@@ -81,7 +81,9 @@ async function syncNFTBlocks() {
                     if (
                         !(await databaseManager.mintToken(
                             token,
-                            transaction.blockNumber
+                            transaction.hash,
+                            transaction.blockNumber,
+                            transaction.timeStamp
                         ))
                     ) {
                         result = false;
@@ -92,7 +94,9 @@ async function syncNFTBlocks() {
                         !(await databaseManager.burnToken(
                             config.contractNFT,
                             decodedData.params[0].value,
-                            transaction.blockNumber
+                            transaction.hash,
+                            transaction.blockNumber,
+                            transaction.timeStamp
                         ))
                     ) {
                         result = false;
@@ -110,7 +114,9 @@ async function syncNFTBlocks() {
                             Web3.utils.toChecksumAddress(
                                 decodedData.params[1].value
                             ),
-                            transaction.blockNumber
+                            transaction.hash,
+                            transaction.blockNumber,
+                            transaction.timeStamp
                         ))
                     ) {
                         result = false;
@@ -232,7 +238,9 @@ async function syncExchangeBlocks() {
                             Web3.utils.toChecksumAddress(
                                 decodedData.params[4].value
                             ),
-                            transaction.blockNumber
+                            transaction.hash,
+                            transaction.blockNumber,
+                            transaction.timeStamp
                         ))
                     ) {
                         result = false;
@@ -254,7 +262,9 @@ async function syncExchangeBlocks() {
                             Web3.utils.toChecksumAddress(
                                 decodedData.params[4].value
                             ),
-                            transaction.blockNumber
+                            transaction.hash,
+                            transaction.blockNumber,
+                            transaction.timeStamp
                         ))
                     ) {
                         result = false;
