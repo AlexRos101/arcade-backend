@@ -325,18 +325,20 @@ async function addToken(connection, item) {
     return ret;
 }
 
-async function addMintTx(connection, id, item) {
+async function addMintTx(connection, id, item, txid, timestamp) {
     let ret = false;
 
     try {
         const query =
-            'INSERT INTO tbl_history (token_id, from_address, to_address, type) ' +
-            'VALUE(?, ?, ?, ?)';
+            'INSERT INTO tbl_history (txid, token_id, from_address, to_address, type, block_timestamp) ' +
+            'VALUE(?, ?, ?, ?, ?, ?)';
         const [rows] = await mysqlExecute(connection, query, [
+            txid,
             id,
             item.owner,
             item.owner,
             CONST.TX_TYPE.MINT,
+            timestamp
         ]);
         ret = rows.insertId > 0;
     } catch (err) {
@@ -364,7 +366,7 @@ async function updateSyncBlockNumber(connection, contractType, blockNumber) {
     return ret;
 }
 
-async function mintToken(item, blockNumber) {
+async function mintToken(item, txid, blockNumber, timestamp) {
     let connection = null;
     let ret = false;
 
@@ -376,7 +378,7 @@ async function mintToken(item, blockNumber) {
         const tokenID = await addToken(connection, item);
         if (tokenID === 0) throw new Error('Adding token failed.');
 
-        if (!(await addMintTx(connection, tokenID, item))) {
+        if (!(await addMintTx(connection, tokenID, item, txid, timestamp))) {
             throw new Error('Adding mint tx failed.');
         }
 
@@ -536,18 +538,20 @@ async function deleteToken(connection, id) {
     return ret;
 }
 
-async function addBurnTx(connection, item) {
+async function addBurnTx(connection, item, txid, timestamp) {
     let ret = false;
 
     try {
         const query =
             'INSERT INTO tbl_history ' +
-            '(token_id, from_address, to_address, type) VALUE (?, ?, ?, ?)';
+            '(txid, token_id, from_address, to_address, type, block_timestamp) VALUE (?, ?, ?, ?, ?, ?)';
         const [rows] = await mysqlExecute(connection, query, [
+            txid,
             item.id,
             item.owner,
             item.owner,
             CONST.TX_TYPE.BUNRT,
+            timestamp
         ]);
         ret = rows.insertId > 0;
     } catch (err) {
@@ -557,7 +561,7 @@ async function addBurnTx(connection, item) {
     return ret;
 }
 
-async function burnToken(contractAddress, tokenID, blockNumber) {
+async function burnToken(contractAddress, tokenID, txid, blockNumber, timestamp) {
     let connection = null;
     let ret = false;
 
@@ -573,7 +577,7 @@ async function burnToken(contractAddress, tokenID, blockNumber) {
             throw new Error('Deleting token failed.');
         }
 
-        if (!(await addBurnTx(connection, token))) {
+        if (!(await addBurnTx(connection, token, txid, timestamp))) {
             throw new Error('Adding burn tx failed.');
         }
 
@@ -633,7 +637,7 @@ async function sellToken(
     contractAddress,
     tokenID,
     arcadedogePrice,
-    blockNumber
+    blockNumber,
 ) {
     let connection = null;
     let ret = false;
@@ -736,21 +740,23 @@ async function updateTokenOwner(connection, id, owner) {
     return ret;
 }
 
-async function addExchangeTx(connection, id, from, to, assetID, amount) {
+async function addExchangeTx(connection, id, from, to, assetID, amount, txid, timestamp) {
     let ret = false;
 
     try {
         const query =
             'INSERT INTO tbl_history ' +
-            '(token_id, from_address, to_address, asset_id, amount, type) ' +
-            'VALUE(?, ?, ?, ?, ?, ?)';
+            '(txid, token_id, from_address, to_address, asset_id, token_amount, type, block_timestamp) ' +
+            'VALUE(?, ?, ?, ?, ?, ?, ?, ?)';
         const [rows] = await mysqlExecute(connection, query, [
+            txid,
             id,
             from,
             to,
             assetID,
             amount,
             CONST.TX_TYPE.EXCHANGE,
+            timestamp
         ]);
         ret = rows.insertId > 0;
     } catch (err) {
@@ -760,18 +766,20 @@ async function addExchangeTx(connection, id, from, to, assetID, amount) {
     return ret;
 }
 
-async function addTransferTx(connection, id, from, to) {
+async function addTransferTx(connection, id, from, to, txid, timestamp) {
     let ret = false;
 
     try {
         const query =
             'INSERT INTO tbl_history ' +
-            '(token_id, from_address, to_address, type) VALUE(?, ?, ?, ?)';
+            '(txid, token_id, from_address, to_address, type, block_timestamp) VALUE(?, ?, ?, ?, ?, ?)';
         const [rows] = await mysqlExecute(connection, query, [
+            txid,
             id,
             from,
             to,
             CONST.TX_TYPE.EXCHANGE,
+            timestamp
         ]);
         ret = rows.insertId > 0;
     } catch (err) {
@@ -803,7 +811,9 @@ async function exchangeToken(
     assetID,
     amount,
     buyer,
-    blockNumber
+    txid,
+    blockNumber,
+    timestamp
 ) {
     let connection = null;
     let ret = false;
@@ -827,7 +837,9 @@ async function exchangeToken(
                 owner,
                 buyer,
                 assetID,
-                amount
+                amount,
+                txid,
+                timestamp
             ))
         ) {
             throw new Error('Adding exchange tx failed.');
@@ -857,7 +869,7 @@ async function exchangeToken(
     return ret;
 }
 
-async function transferToken(contractAddress, tokenID, from, to, blockNumber) {
+async function transferToken(contractAddress, tokenID, from, to, txid, blockNumber, timestamp) {
     let connection = null;
     let ret = false;
 
@@ -873,7 +885,7 @@ async function transferToken(contractAddress, tokenID, from, to, blockNumber) {
             throw new Error('Updating token owner failed.');
         }
 
-        if (!(await addTransferTx(connection, token.id, from, to))) {
+        if (!(await addTransferTx(connection, token.id, from, to, txid, timestamp))) {
             throw new Error('Adding transfer tx failed.');
         }
 
