@@ -688,8 +688,7 @@ function registerAPIs(app) {
 
         if (
             id === null ||
-            address === null ||
-            address === '' ||
+            !address ||
             amount === null
         ) {
             responseInvalid(res);
