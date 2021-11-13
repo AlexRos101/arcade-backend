@@ -685,11 +685,7 @@ function registerAPIs(app) {
         const address = req.fields.address;
         const amount = req.fields.amount;
 
-        if (
-            id === null ||
-            !address ||
-            amount === null
-        ) {
+        if (id === null || !address || amount === null) {
             responseInvalid(res);
             return;
         }
@@ -717,6 +713,36 @@ function registerAPIs(app) {
                 {
                     result: false,
                     msg: gameBackendVerification.msg,
+                },
+                res
+            );
+        }
+    });
+
+    app.post('/sync/txs', async (req, res) => {
+        const gameId = req.fields.game_id;
+        const timestamp = req.fields.timestamp;
+        const count = parseInt(req.fields.count, 10);
+
+        if (!gameId || !timestamp || !count) {
+            responseInvalid(res);
+            return;
+        }
+
+        const txs = await databaseManager.getTxs(gameId, timestamp, count);
+        if (txs) {
+            response(
+                {
+                    result: 1,
+                    data: txs,
+                },
+                res
+            );
+        } else {
+            response(
+                {
+                    result: 0,
+                    msg: 'Internal Error',
                 },
                 res
             );

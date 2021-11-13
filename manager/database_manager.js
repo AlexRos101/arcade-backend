@@ -1201,6 +1201,31 @@ async function getLikesCount(discussionID, parentID) {
     return 0;
 }
 
+async function getTxs(gameId, timestamp, count) {
+    let connection = null;
+
+    try {
+        connection = await connect();
+
+        const query =
+            'SELECT from_address, to_address, type as tx_type, token_id, gamepoint_amount as amount, block_timestamp ' +
+            'FROM tbl_history ' +
+            'WHERE game_id = ? AND block_timestamp > ? ORDER BY block_timestamp LIMIT 0, ?';
+
+        const [rows] = await mysqlExecute(connection, query, [
+            gameId,
+            timestamp,
+            count,
+        ]);
+
+        connection.release();
+        return rows;
+    } catch (err) {
+        onConnectionErr(connection, err, false);
+    }
+    return null;
+}
+
 module.exports = {
     getStuff,
     getDiscussion,
@@ -1233,4 +1258,5 @@ module.exports = {
     getLikesCount,
     getDiscussionCnt,
     getCommentByID,
+    getTxs,
 };
