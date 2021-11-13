@@ -704,7 +704,9 @@ function registerAPIs(app) {
             response(
                 {
                     result: true,
-                    verification_token: backendSign,
+                    data: {
+                        verification_token: backendSign,
+                    },
                 },
                 res
             );
