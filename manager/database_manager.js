@@ -1201,6 +1201,147 @@ async function getLikesCount(discussionID, parentID) {
     return 0;
 }
 
+async function addSwapTx(
+    connection,
+    id,
+    address,
+    tokenAmount,
+    gamePointAmount,
+    type,
+    txid,
+    timestamp
+) {
+    let ret = false;
+
+    try {
+        const query =
+            'INSERT INTO tbl_history ' +
+            '(txid, game_id, from_address, to_address, token_amount, gamepoint_amount, type, block_timestamp) ' +
+            'VALUE(?, ?, ?, ?, ?, ?, ?, ?)';
+        const [rows] = await mysqlExecute(connection, query, [
+            txid,
+            id,
+            address,
+            address,
+            tokenAmount,
+            gamePointAmount,
+            type,
+            timestamp,
+        ]);
+        ret = rows.insertId > 0;
+    } catch (err) {
+        console.log(err);
+    }
+
+    return ret;
+}
+
+async function buyGamePoint(
+    id,
+    address,
+    tokenAmount,
+    gamePointAmount,
+    txid,
+    timestamp,
+    blockNumber
+) {
+    let ret = false;
+    let connection = null;
+
+    try {
+        connection = await connect();
+
+        await startTransactions(connection);
+
+        if (
+            !(await addSwapTx(
+                connection,
+                id,
+                address,
+                tokenAmount,
+                gamePointAmount,
+                CONST.SWAP_TYPE.DEPOSIT,
+                txid,
+                timestamp
+            ))
+        ) {
+            throw new Error('Adding buy request failed!');
+        }
+
+        if (
+            !(await updateSyncBlockNumber(
+                connection,
+                CONST.CONTRACT_TYPE.SWAP,
+                blockNumber
+            ))
+        ) {
+            throw new Error('Updating sync block number failed.');
+        }
+
+        await commitTransaction(connection);
+        ret = true;
+
+        connection.release();
+    } catch (err) {
+        await onConnectionErr(connection, err, true);
+    }
+
+    return ret;
+}
+
+async function sellGamePoint(
+    id,
+    address,
+    tokenAmount,
+    gamePointAmount,
+    txid,
+    timestamp,
+    blockNumber
+) {
+    let ret = false;
+    let connection = null;
+
+    try {
+        connection = await connect();
+
+        await startTransactions(connection);
+
+        if (
+            !(await addSwapTx(
+                connection,
+                id,
+                address,
+                tokenAmount,
+                gamePointAmount,
+                CONST.SWAP_TYPE.WITHDRAW,
+                txid,
+                timestamp
+            ))
+        ) {
+            throw new Error('Adding buy request failed!');
+        }
+
+        if (
+            !(await updateSyncBlockNumber(
+                connection,
+                CONST.CONTRACT_TYPE.SWAP,
+                blockNumber
+            ))
+        ) {
+            throw new Error('Updating sync block number failed.');
+        }
+
+        await commitTransaction(connection);
+        ret = true;
+
+        connection.release();
+    } catch (err) {
+        await onConnectionErr(connection, err, true);
+    }
+
+    return ret;
+}
+
 module.exports = {
     getStuff,
     getDiscussion,
@@ -1233,4 +1374,6 @@ module.exports = {
     getLikesCount,
     getDiscussionCnt,
     getCommentByID,
+    buyGamePoint,
+    sellGamePoint,
 };

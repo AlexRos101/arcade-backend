@@ -685,11 +685,7 @@ function registerAPIs(app) {
         const address = req.fields.address;
         const amount = req.fields.amount;
 
-        if (
-            id === null ||
-            !address ||
-            amount === null
-        ) {
+        if (id === null || !address || amount === null) {
             responseInvalid(res);
             return;
         }

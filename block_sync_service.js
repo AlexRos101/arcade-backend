@@ -295,9 +295,111 @@ async function syncExchangeBlocks() {
     console.log('Sycnronizing Exchange blocks completed.');
 }
 
+async function syncSwapBlocks() {
+    console.log('Sycnronizing Swap blocks');
+
+    const blockNumber = await databaseManager.getSyncBlockNumber(
+        CONST.CONTRACT_TYPE.SWAP
+    );
+
+    let { eventURL } = config;
+    eventURL = eventURL.replace('CONTRACT_ADDRESS', config.contractSwap);
+    eventURL = eventURL.replace('START_BLOCK', `${blockNumber + 1}`);
+
+    let eventData = null;
+    try {
+        eventData = await axios.get(eventURL);
+    } catch (err) {
+        console.log(err);
+        return;
+    }
+
+    if (eventData.data.status !== '1') return;
+
+    const events = eventData.data.result;
+
+    try {
+        for (let j = 0; j < events.length; j++) {
+            const event = events[j];
+
+            let result = true;
+
+            let id = 0;
+            let tokenAmount = 0;
+            let gamePointAmount = 0;
+            switch (event.topics[0]) {
+                case CONST.SWAP_EVENT_TYPE.BUY_GAME_POINT:
+                    id = parseInt(event.topics[1], 16);
+                    tokenAmount = Web3.utils.fromWei(
+                        /* eslint-disable-next-line */
+                        `${BigInt(event.topics[2]).toString(10)}`,
+                        'ether'
+                    );
+                    gamePointAmount = parseInt(event.topics[3], 16);
+
+                    result = await databaseManager.buyGamePoint(
+                        id,
+                        Web3.utils.toChecksumAddress(event.address),
+                        tokenAmount,
+                        gamePointAmount,
+                        event.transactionHash,
+                        /* eslint-disable-next-line */
+                        BigInt(event.timeStamp),
+                        /* eslint-disable-next-line */
+                        BigInt(event.blockNumber)
+                    );
+                    break;
+                case CONST.SWAP_EVENT_TYPE.SELL_GAME_POINT:
+                    id = parseInt(event.topics[1], 16);
+                    tokenAmount = Web3.utils.fromWei(
+                        /* eslint-disable-next-line */
+                        `${BigInt(event.topics[2]).toString(10)}`,
+                        'ether'
+                    );
+                    gamePointAmount = parseInt(event.topics[3], 16);
+
+                    result = await databaseManager.sellGamePoint(
+                        id,
+                        Web3.utils.toChecksumAddress(event.address),
+                        tokenAmount,
+                        gamePointAmount,
+                        event.transactionHash,
+                        /* eslint-disable-next-line */
+                        BigInt(event.timeStamp),
+                        /* eslint-disable-next-line */
+                        BigInt(event.blockNumber)
+                    );
+                    break;
+                default:
+                    if (
+                        !(await databaseManager.updateOtherSyncBlockNumber(
+                            CONST.CONTRACT_TYPE.SWAP,
+                            /* eslint-disable-next-line */
+                            BigInt(event.blockNumber)
+                        ))
+                    ) {
+                        result = false;
+                    }
+                    break;
+            }
+
+            if (result === false) {
+                throw new Error(
+                    `Synchronizing failed. TxHash: ${event.transactionHash}`
+                );
+            }
+        }
+    } catch (err) {
+        console.log(err);
+    }
+
+    console.log('Synchronizing Swap blocks completed.');
+}
+
 async function syncBlocks() {
     await syncNFTBlocks();
     await syncExchangeBlocks();
+    await syncSwapBlocks();
 
     setTimeout(() => {
         syncBlocks();
