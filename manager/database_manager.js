@@ -297,6 +297,23 @@ async function addComment(discussionID, parentID, content, userType, user) {
     return ret;
 }
 
+async function getGameId(connection, tokenId) {
+    const res = -1;
+
+    try {
+        const query = 'SELECT game_id FROM tbl_item WHERE token_id = ?';
+        const [rows] = await mysqlExecute(connection, query, [tokenId]);
+
+        if (rows.length > 0) {
+            return rows[0].game_id;
+        }
+    } catch (err) {
+        console.log(err);
+    }
+
+    return res;
+}
+
 async function addToken(connection, item) {
     let ret = 0;
 
@@ -379,7 +396,16 @@ async function mintToken(item, txid, blockNumber, timestamp) {
         const tokenID = await addToken(connection, item);
         if (tokenID === 0) throw new Error('Adding token failed.');
 
-        if (!(await addMintTx(connection, tokenID, item.game_id, item, txid, timestamp))) {
+        if (
+            !(await addMintTx(
+                connection,
+                tokenID,
+                item.game_id,
+                item,
+                txid,
+                timestamp
+            ))
+        ) {
             throw new Error('Adding mint tx failed.');
         }
 
@@ -788,7 +814,15 @@ async function addExchangeTx(
     return ret;
 }
 
-async function addTransferTx(connection, gameId, id, from, to, txid, timestamp) {
+async function addTransferTx(
+    connection,
+    gameId,
+    id,
+    from,
+    to,
+    txid,
+    timestamp
+) {
     let ret = false;
 
     try {
@@ -1384,23 +1418,6 @@ async function sellGamePoint(
     return ret;
 }
 
-async function getGameId(connection, tokenId) {
-    let res = -1;
-
-    try {
-        const query = 'SELECT game_id FROM tbl_item WHERE token_id = ?';
-        const [rows] = await mysqlExecute(connection, query, [tokenId]);
-        
-        if (rows.length > 0) {
-            return rows[0].game_id;
-        }
-    } catch (err) {
-        console.log(err);
-    }
-
-    return res;
-}
-
 module.exports = {
     getStuff,
     getDiscussion,
@@ -1435,5 +1452,5 @@ module.exports = {
     getCommentByID,
     getTxs,
     buyGamePoint,
-    sellGamePoint
+    sellGamePoint,
 };

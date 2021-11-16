@@ -23,8 +23,8 @@ const config = {
     eventURL:
         'https://api-testnet.bscscan.com/api?module=logs&action=getLogs&fromBlock=START_BLOCK&toBlock=latest&' +
         'address=CONTRACT_ADDRESS',
-    
-    bscProviderUrl: 'https://data-seed-prebsc-1-s1.binance.org:8545/'
+
+    bscProviderUrl: 'https://data-seed-prebsc-1-s1.binance.org:8545/',
 };
 
 module.exports = config;
