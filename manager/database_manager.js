@@ -1211,7 +1211,7 @@ async function getTxs(gameId, index, count) {
             'SELECT id, from_address, to_address, type as tx_type, token_id, gamepoint_amount as amount, ' +
             'block_timestamp ' +
             'FROM tbl_history ' +
-            'WHERE game_id = ? AND id > ? ORDER BY block_timestamp LIMIT 0, ?';
+            'WHERE game_id = ? AND id > ? ORDER BY id LIMIT 0, ?';
 
         const [rows] = await mysqlExecute(connection, query, [
             gameId,
