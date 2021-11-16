@@ -726,7 +726,7 @@ function registerAPIs(app) {
         const index = req.fields.index;
         const count = parseInt(req.fields.count, 10);
 
-        if (!gameId || !index || !count) {
+        if (!gameId || !count) {
             responseInvalid(res);
             return;
         }
