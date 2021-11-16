@@ -723,15 +723,15 @@ function registerAPIs(app) {
 
     app.post('/sync/txs', async (req, res) => {
         const gameId = req.fields.game_id;
-        const timestamp = req.fields.timestamp;
+        const index = req.fields.index;
         const count = parseInt(req.fields.count, 10);
 
-        if (!gameId || !timestamp || !count) {
+        if (!gameId || !index || !count) {
             responseInvalid(res);
             return;
         }
 
-        const txs = await databaseManager.getTxs(gameId, timestamp, count);
+        const txs = await databaseManager.getTxs(gameId, index, count);
         if (txs) {
             response(
                 {
