@@ -325,15 +325,16 @@ async function addToken(connection, item) {
     return ret;
 }
 
-async function addMintTx(connection, id, item, txid, timestamp) {
+async function addMintTx(connection, id, gameId, item, txid, timestamp) {
     let ret = false;
 
     try {
         const query =
-            'INSERT INTO tbl_history (txid, token_id, from_address, to_address, type, block_timestamp) ' +
-            'VALUE(?, ?, ?, ?, ?, ?)';
+            'INSERT INTO tbl_history (txid, game_id, token_id, from_address, to_address, type, block_timestamp) ' +
+            'VALUE(?, ?, ?, ?, ?, ?, ?)';
         const [rows] = await mysqlExecute(connection, query, [
             txid,
+            gameId,
             id,
             item.owner,
             item.owner,
@@ -378,7 +379,7 @@ async function mintToken(item, txid, blockNumber, timestamp) {
         const tokenID = await addToken(connection, item);
         if (tokenID === 0) throw new Error('Adding token failed.');
 
-        if (!(await addMintTx(connection, tokenID, item, txid, timestamp))) {
+        if (!(await addMintTx(connection, tokenID, item.game_id, item, txid, timestamp))) {
             throw new Error('Adding mint tx failed.');
         }
 
@@ -538,15 +539,16 @@ async function deleteToken(connection, id) {
     return ret;
 }
 
-async function addBurnTx(connection, item, txid, timestamp) {
+async function addBurnTx(connection, gameId, item, txid, timestamp) {
     let ret = false;
 
     try {
         const query =
             'INSERT INTO tbl_history ' +
-            '(txid, token_id, from_address, to_address, type, block_timestamp) VALUE (?, ?, ?, ?, ?, ?)';
+            '(txid, game_id, token_id, from_address, to_address, type, block_timestamp) VALUE (?, ?, ?, ?, ?, ?, ?)';
         const [rows] = await mysqlExecute(connection, query, [
             txid,
+            gameId,
             item.id,
             item.owner,
             item.owner,
@@ -579,11 +581,14 @@ async function burnToken(
         const token = await getTokenByContractInfo(contractAddress, tokenID);
         if (token == null) throw new Error('Not exist token.');
 
+        const gameId = await getGameId(connection, tokenID);
+        if (gameId === -1) throw new Error('Not exist gameId');
+
         if (!(await deleteToken(connection, token.id))) {
             throw new Error('Deleting token failed.');
         }
 
-        if (!(await addBurnTx(connection, token, txid, timestamp))) {
+        if (!(await addBurnTx(connection, gameId, token, txid, timestamp))) {
             throw new Error('Adding burn tx failed.');
         }
 
@@ -748,6 +753,7 @@ async function updateTokenOwner(connection, id, owner) {
 
 async function addExchangeTx(
     connection,
+    gameId,
     id,
     from,
     to,
@@ -761,10 +767,11 @@ async function addExchangeTx(
     try {
         const query =
             'INSERT INTO tbl_history ' +
-            '(txid, token_id, from_address, to_address, asset_id, token_amount, type, block_timestamp) ' +
-            'VALUE(?, ?, ?, ?, ?, ?, ?, ?)';
+            '(txid, game_id, token_id, from_address, to_address, asset_id, token_amount, type, block_timestamp) ' +
+            'VALUE(?, ?, ?, ?, ?, ?, ?, ?, ?)';
         const [rows] = await mysqlExecute(connection, query, [
             txid,
+            gameId,
             id,
             from,
             to,
@@ -781,15 +788,16 @@ async function addExchangeTx(
     return ret;
 }
 
-async function addTransferTx(connection, id, from, to, txid, timestamp) {
+async function addTransferTx(connection, gameId, id, from, to, txid, timestamp) {
     let ret = false;
 
     try {
         const query =
             'INSERT INTO tbl_history ' +
-            '(txid, token_id, from_address, to_address, type, block_timestamp) VALUE(?, ?, ?, ?, ?, ?)';
+            '(txid, game_id, token_id, from_address, to_address, type, block_timestamp) VALUE(?, ?, ?, ?, ?, ?, ?)';
         const [rows] = await mysqlExecute(connection, query, [
             txid,
+            gameId,
             id,
             from,
             to,
@@ -841,6 +849,9 @@ async function exchangeToken(
         const token = await getTokenByContractInfo(contractAddress, tokenID);
         if (token == null) throw new Error('Not exist token.');
 
+        const gameId = await getGameId(connection, tokenID);
+        if (gameId === -1) throw new Error('Not exist gameId');
+
         if (!(await updateTokenOwner(connection, token.id, buyer))) {
             throw new Error('Updating token owner failed.');
         }
@@ -848,6 +859,7 @@ async function exchangeToken(
         if (
             !(await addExchangeTx(
                 connection,
+                gameId,
                 token.id,
                 owner,
                 buyer,
@@ -904,6 +916,9 @@ async function transferToken(
         const token = await getTokenByContractInfo(contractAddress, tokenID);
         if (token == null) throw new Error('Not exist token.');
 
+        const gameId = await getGameId(connection, tokenID);
+        if (gameId === -1) throw new Error('Not exist gameId');
+
         if (!(await updateTokenOwner(connection, token.id, to))) {
             throw new Error('Updating token owner failed.');
         }
@@ -911,6 +926,7 @@ async function transferToken(
         if (
             !(await addTransferTx(
                 connection,
+                gameId,
                 token.id,
                 from,
                 to,
@@ -1368,6 +1384,23 @@ async function sellGamePoint(
     return ret;
 }
 
+async function getGameId(connection, tokenId) {
+    let res = -1;
+
+    try {
+        const query = 'SELECT game_id FROM tbl_item WHERE token_id = ?';
+        const [rows] = await mysqlExecute(connection, query, [tokenId]);
+        
+        if (rows.length > 0) {
+            return rows[0].game_id;
+        }
+    } catch (err) {
+        console.log(err);
+    }
+
+    return res;
+}
+
 module.exports = {
     getStuff,
     getDiscussion,
@@ -1402,5 +1435,5 @@ module.exports = {
     getCommentByID,
     getTxs,
     buyGamePoint,
-    sellGamePoint,
+    sellGamePoint
 };
