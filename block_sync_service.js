@@ -322,6 +322,11 @@ async function syncSwapBlocks() {
         for (let j = 0; j < events.length; j++) {
             const event = events[j];
 
+            const web3 = new Web3(config.bscProviderUrl);
+
+            const tx = await web3.eth.getTransaction(event.transactionHash);
+            const address = Web3.utils.toChecksumAddress(tx.from);
+
             let result = true;
 
             let id = 0;
@@ -339,7 +344,7 @@ async function syncSwapBlocks() {
 
                     result = await databaseManager.buyGamePoint(
                         id,
-                        Web3.utils.toChecksumAddress(event.address),
+                        Web3.utils.toChecksumAddress(address),
                         tokenAmount,
                         gamePointAmount,
                         event.transactionHash,
@@ -360,7 +365,7 @@ async function syncSwapBlocks() {
 
                     result = await databaseManager.sellGamePoint(
                         id,
-                        Web3.utils.toChecksumAddress(event.address),
+                        Web3.utils.toChecksumAddress(address),
                         tokenAmount,
                         gamePointAmount,
                         event.transactionHash,
