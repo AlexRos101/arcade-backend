@@ -1201,7 +1201,7 @@ async function getLikesCount(discussionID, parentID) {
     return 0;
 }
 
-async function getTxs(gameId, timestamp, count) {
+async function getTxs(gameId, index, count) {
     let connection = null;
 
     try {
@@ -1210,11 +1210,11 @@ async function getTxs(gameId, timestamp, count) {
         const query =
             'SELECT from_address, to_address, type as tx_type, token_id, gamepoint_amount as amount, block_timestamp ' +
             'FROM tbl_history ' +
-            'WHERE game_id = ? AND block_timestamp > ? ORDER BY block_timestamp LIMIT 0, ?';
+            'WHERE game_id = ? AND id > ? ORDER BY block_timestamp LIMIT 0, ?';
 
         const [rows] = await mysqlExecute(connection, query, [
             gameId,
-            timestamp,
+            index,
             count,
         ]);
 
