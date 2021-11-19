@@ -574,7 +574,7 @@ function registerAPIs(app) {
                 const archive = new Unrar(newpath);
 
                 archive.list((listErr, entries) => {
-                    if (listErr === null) {
+                    if (listErr !== null) {
                         console.log(listErr);
                         response({ result: false }, res);
                         return;
