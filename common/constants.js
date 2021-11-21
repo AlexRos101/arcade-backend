@@ -73,6 +73,12 @@ const SWAP_TYPE = {
     WITHDRAW: 6,
 };
 
+const GAME_RET_CODE = {
+    SUCCESS: 0,
+    FAILED: 1,
+    INVALID_PARAMETERS: 102,
+};
+
 module.exports = {
     ERC721_FUNCTION_NAME,
     EXCHANGE_FUNCTION_NAME,
@@ -86,4 +92,5 @@ module.exports = {
     RET_CODE,
     SWAP_EVENT_TYPE,
     SWAP_TYPE,
+    GAME_RET_CODE,
 };

@@ -727,7 +727,13 @@ function registerAPIs(app) {
         const count = parseInt(req.fields.count, 10);
 
         if (!gameId || !count) {
-            responseInvalid(res);
+            response(
+                {
+                    result: CONST.GAME_RET_CODE.INVALID_PARAMETERS,
+                    msg: 'Validation failed.',
+                },
+                res
+            );
             return;
         }
 
@@ -735,7 +741,7 @@ function registerAPIs(app) {
         if (txs) {
             response(
                 {
-                    result: 1,
+                    result: CONST.GAME_RET_CODE.SUCCESS,
                     data: txs,
                 },
                 res
@@ -743,7 +749,7 @@ function registerAPIs(app) {
         } else {
             response(
                 {
-                    result: 0,
+                    result: CONST.GAME_RET_CODE.FAILED,
                     msg: 'Internal Error',
                 },
                 res
