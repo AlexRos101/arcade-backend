@@ -1,5 +1,5 @@
 const CONST = require('../common/constants');
-const apiManager = require('./log_manager');
+const logManager = require('./log_manager');
 
 /* eslint-disable */
 async function connect() {
