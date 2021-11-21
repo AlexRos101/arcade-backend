@@ -1,4 +1,5 @@
 const CONST = require('../common/constants');
+const logManager = require('./log_manager');
 
 /* eslint-disable */
 async function connect() {
@@ -9,7 +10,7 @@ async function connect() {
                 resolve(connection);
             })
             .catch((err) => {
-                console.log(err);
+                logManager.error(err);
                 reject(err);
             });
     });
@@ -32,7 +33,7 @@ async function rollbackTransaction(connection) {
 }
 
 async function onConnectionErr(connection, err, isRollBack = false) {
-    console.log(err);
+    logManager.error(err);
     if (connection == null) return;
     if (err.errono === CONST.MYSQL_ERR_NO.CONNECTION_ERROR) return;
     if (isRollBack) await rollbackTransaction(connection);
@@ -308,7 +309,7 @@ async function getGameId(connection, tokenId) {
             return rows[0].game_id;
         }
     } catch (err) {
-        console.log(err);
+        logManager.error(err);
     }
 
     return res;
@@ -337,7 +338,7 @@ async function addToken(connection, item) {
         ]);
         ret = rows.insertId;
     } catch (err) {
-        console.log(err);
+        logManager.error(err);
     }
     return ret;
 }
@@ -360,7 +361,7 @@ async function addMintTx(connection, id, gameId, item, txid, timestamp) {
         ]);
         ret = rows.insertId > 0;
     } catch (err) {
-        console.log(err);
+        logManager.error(err);
     }
 
     return ret;
@@ -378,7 +379,7 @@ async function updateSyncBlockNumber(connection, contractType, blockNumber) {
         ]);
         ret = rows.affectedRows > 0;
     } catch (err) {
-        console.log(err);
+        logManager.error(err);
     }
 
     return ret;
@@ -559,7 +560,7 @@ async function deleteToken(connection, id) {
         ]);
         ret = rows.affectedRows > 0;
     } catch (err) {
-        console.log(err);
+        logManager.error(err);
     }
 
     return ret;
@@ -583,7 +584,7 @@ async function addBurnTx(connection, gameId, item, txid, timestamp) {
         ]);
         ret = rows.insertId > 0;
     } catch (err) {
-        console.log(err);
+        logManager.error(err);
     }
 
     return ret;
@@ -664,7 +665,7 @@ async function updateTokenVisible(
             ret = rows.affectedRows > 0;
         }
     } catch (err) {
-        console.log(err);
+        logManager.error(err);
     }
 
     return ret;
@@ -771,7 +772,7 @@ async function updateTokenOwner(connection, id, owner) {
         const [rows] = await mysqlExecute(connection, query, [owner, id]);
         ret = rows.affectedRows > 0;
     } catch (err) {
-        console.log(err);
+        logManager.error(err);
     }
 
     return ret;
@@ -808,7 +809,7 @@ async function addExchangeTx(
         ]);
         ret = rows.insertId > 0;
     } catch (err) {
-        console.log(err);
+        logManager.error(err);
     }
 
     return ret;
@@ -840,7 +841,7 @@ async function addTransferTx(
         ]);
         ret = rows.insertId > 0;
     } catch (err) {
-        console.log(err);
+        logManager.error(err);
     }
 
     return ret;
@@ -855,7 +856,7 @@ async function increaseTradeCnt(connection, id) {
         const [rows] = await mysqlExecute(connection, query, [id]);
         ret = rows.affectedRows > 0;
     } catch (err) {
-        console.log(err);
+        logManager.error(err);
     }
 
     return ret;
@@ -1306,7 +1307,7 @@ async function addSwapTx(
         ]);
         ret = rows.insertId > 0;
     } catch (err) {
-        console.log(err);
+        logManager.error(err);
     }
 
     return ret;

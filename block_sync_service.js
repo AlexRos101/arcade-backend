@@ -7,12 +7,13 @@ const databaseManager = require('./manager/database_manager');
 const erc721ABI = require('./contracts/ERC721.json');
 const exchangeABI = require('./contracts/EXCHANGE.json');
 const CONST = require('./common/constants');
+const logManager = require('./manager/log_manager');
 
 erc721Decoder.addABI(erc721ABI);
 exchangeDecoder.addABI(exchangeABI);
 
 async function syncNFTBlocks() {
-    console.log('Sycnronizing NFT blocks');
+    logManager.info('Sycnronizing NFT blocks');
 
     const blockNumber = await databaseManager.getSyncBlockNumber(
         CONST.CONTRACT_TYPE.NFT
@@ -26,7 +27,7 @@ async function syncNFTBlocks() {
     try {
         historyData = await axios.get(historyURL);
     } catch (err) {
-        console.log(err);
+        logManager.error(err);
         return;
     }
 
@@ -141,14 +142,14 @@ async function syncNFTBlocks() {
             }
         }
     } catch (err) {
-        console.log(err);
+        logManager.error(err);
     }
 
-    console.log('Synchronizing NFT blocks completed.');
+    logManager.info('Synchronizing NFT blocks completed.');
 }
 
 async function syncExchangeBlocks() {
-    console.log('Sycnronizing Exchange blocks.');
+    logManager.info('Sycnronizing Exchange blocks.');
 
     const blockNumber = await databaseManager.getSyncBlockNumber(
         CONST.CONTRACT_TYPE.EXCHANGE
@@ -165,7 +166,7 @@ async function syncExchangeBlocks() {
     try {
         historyData = await axios.get(historyURL);
     } catch (err) {
-        console.log(err);
+        logManager.error(err);
         return;
     }
 
@@ -289,14 +290,14 @@ async function syncExchangeBlocks() {
             }
         }
     } catch (err) {
-        console.log(err);
+        logManager.error(err);
     }
 
-    console.log('Sycnronizing Exchange blocks completed.');
+    logManager.info('Sycnronizing Exchange blocks completed.');
 }
 
 async function syncSwapBlocks() {
-    console.log('Sycnronizing Swap blocks');
+    logManager.info('Sycnronizing Swap blocks');
 
     const blockNumber = await databaseManager.getSyncBlockNumber(
         CONST.CONTRACT_TYPE.SWAP
@@ -310,11 +311,14 @@ async function syncSwapBlocks() {
     try {
         eventData = await axios.get(eventURL);
     } catch (err) {
-        console.log(err);
+        logManager.error(err);
         return;
     }
 
-    if (eventData.data.status !== '1') return;
+    if (eventData.data.status !== '1') {
+        logManager.info('Synchronizing Swap blocks completed.');
+        return;
+    }
 
     const events = eventData.data.result;
 
@@ -395,10 +399,10 @@ async function syncSwapBlocks() {
             }
         }
     } catch (err) {
-        console.log(err);
+        logManager.error(err);
     }
 
-    console.log('Synchronizing Swap blocks completed.');
+    logManager.info('Synchronizing Swap blocks completed.');
 }
 
 async function syncBlocks() {

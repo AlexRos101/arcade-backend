@@ -7,8 +7,11 @@ const databaseManager = require('./database_manager');
 const config = require('../common/config');
 const gameAPI = require('../adapter/game_api');
 const CONST = require('../common/constants');
+const logManager = require('./log_manager');
 
 function response(ret, res) {
+    logManager.info(`api return: ${ret}`);
+
     res.setHeader('content-type', 'text/plain');
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.status(200);
@@ -64,6 +67,8 @@ function isValidCommentParams(params) {
 
 function registerAPIs(app) {
     app.post('/stuff/all', async (req, res) => {
+        logManager.info('"/stuff/all" api is called');
+
         const stuffs = await databaseManager.getStuff(null);
 
         for (let i = 0; i < stuffs.length; i++) {
@@ -93,6 +98,9 @@ function registerAPIs(app) {
 
     app.post('/stuff/search', async (req, res) => {
         const { keyword } = req.fields;
+
+        logManager.info(`"/stuff/search" api is called: keyword=${keyword}`);
+
         const stuffs = await databaseManager.getStuff(null);
 
         for (let i = 0; i < stuffs.length; i++) {
@@ -117,6 +125,8 @@ function registerAPIs(app) {
     app.post('/stuff', async (req, res) => {
         const { id } = req.fields;
 
+        logManager.info(`"/stuff" api is called: id=${id}`);
+
         const stuff = await databaseManager.getStuff(id);
 
         const ret = {
@@ -127,10 +137,14 @@ function registerAPIs(app) {
         response(ret, res);
     });
 
-    app.post('/discussion/all/', async (req, res) => {
+    app.post('/discussion/all', async (req, res) => {
         const { id } = req.fields;
         const { limit } = req.fields;
         const { cnt } = req.fields;
+
+        logManager.info(
+            `"/discussion/all" api is called: id=${id} limit=${limit} cnt=${cnt}`
+        );
 
         const discussions = await databaseManager.getDiscussion(id, limit, cnt);
         for (let i = 0; i < discussions.length; i++) {
@@ -157,6 +171,11 @@ function registerAPIs(app) {
         const { account } = req.fields;
         const { limit } = req.fields;
         const { cnt } = req.fields;
+
+        logManager.info(
+            `"/discussion" api is called: id=${id} account=${account} limit=${limit} cnt=${cnt}`
+        );
+
         let total = 0;
 
         const discussion = await databaseManager.getDiscussionByID(id);
@@ -239,6 +258,13 @@ function registerAPIs(app) {
         const { user_type } = req.fields;
         const { user } = req.fields;
 
+        /* eslint-disable camelcase */
+        logManager.info(
+            `"/discussion/new" api is called: stuff_id=${stuff_id} content=${content} ` +
+                `user_type=${user_type} user=${user}`
+        );
+        /* eslint-enable camelcase */
+
         if (
             !isValidDiscussionParams({
                 stuff_id,
@@ -269,6 +295,8 @@ function registerAPIs(app) {
     app.post('/comment', async (req, res) => {
         const { id } = req.fields;
 
+        logManager.info(`"/comment" api is called: id=${id}`);
+
         const result = await databaseManager.getCommentByID(id);
 
         const likesCount = await databaseManager.getLikesCount(
@@ -294,6 +322,13 @@ function registerAPIs(app) {
         /* eslint-disable-next-line camelcase */
         const { user_type } = req.fields;
         const { user } = req.fields;
+
+        /* eslint-disable camelcase */
+        logManager.info(
+            `"/comment/new" api is called: discussion_id=${discussion_id} parent_id=${parent_id} ` +
+                `content=${content} user_type=${user_type} user=${user}`
+        );
+        /* eslint-enable camelcase */
 
         if (
             !isValidCommentParams({
@@ -325,6 +360,7 @@ function registerAPIs(app) {
     });
 
     app.post('/get_games', async (req, res) => {
+        logManager.info('"/get_games" api is called');
         const result = await databaseManager.getGames();
 
         const ret = {
@@ -342,6 +378,13 @@ function registerAPIs(app) {
         const { parent_id } = req.fields;
         const { user } = req.fields;
         const likesOrUnlikes = req.fields.likes;
+
+        logManager.info(
+            /* eslint-disable-next-line camelcase */
+            `"/set_likes" api is called: discussion_id=${discussion_id} parent_id=${parent_id} ` +
+                `user=${user} likesOrUnlikes=${likesOrUnlikes}`
+        );
+
         let result = {};
         if (likesOrUnlikes === true) {
             result = await databaseManager.insertLikes(
@@ -372,6 +415,11 @@ function registerAPIs(app) {
         const { parent_id } = req.fields;
         const { user } = req.fields;
 
+        logManager.info(
+            /* eslint-disable-next-line camelcase */
+            `"/get_likes" api is called: discussion_id=${discussion_id} parent_id=${parent_id} user=${user}`
+        );
+
         const result = await databaseManager.getLikes(
             discussion_id,
             parent_id,
@@ -387,6 +435,8 @@ function registerAPIs(app) {
     });
 
     app.post('/get_categories', async (req, res) => {
+        logManager.info('"/get_categories" api is called');
+
         const result = await databaseManager.getCategories();
 
         const ret = {
@@ -403,6 +453,11 @@ function registerAPIs(app) {
         const sort_type = req.fields.sort;
         const { limit } = req.fields;
         const { cnt } = req.fields;
+
+        logManager.info(
+            /* eslint-disable-next-line camelcase */
+            `"/get_items_by_address" api is called: address=${address} sort_type=${sort_type} limit=${limit} cnt=${cnt}`
+        );
 
         if (
             !address ||
@@ -440,6 +495,12 @@ function registerAPIs(app) {
         const { limit } = req.fields;
         const { cnt } = req.fields;
 
+        logManager.info(
+            /* eslint-disable-next-line camelcase */
+            `"/get_market_items" api is called: game=${game} category=${category} sort_type=${sort_type} ` +
+                `limit=${limit} cnt=${cnt}`
+        );
+
         if (
             game == null ||
             category == null ||
@@ -472,6 +533,8 @@ function registerAPIs(app) {
     app.post('/get_item_by_id', async (req, res) => {
         const { id } = req.fields;
 
+        logManager.info(`"/get_item_by_id" api is called: id=${id}`);
+
         if (id == null) {
             responseInvalid(res);
             return;
@@ -499,6 +562,14 @@ function registerAPIs(app) {
         const { description } = req.fields;
         const { price } = req.fields;
 
+        /* eslint-disable camelcase */
+        logManager.info(
+            `"/update_item_by_id" api is called: id=${id} game_id=${game_id} category_id=${category_id} name=${name} ` +
+                `is_anonymous=${is_anonymous} description=${description} price=${price}`
+        );
+
+        /* eslint-enable camelcase */
+
         if (id == null) {
             responseInvalid(res);
             return;
@@ -525,6 +596,8 @@ function registerAPIs(app) {
     app.post('/get_item_by_tokenid', async (req, res) => {
         const id = req.fields.token_id;
 
+        logManager.info(`"/get_item_by_tokenid" api is called: token_id=${id}`);
+
         if (id == null) {
             responseInvalid(res);
             return;
@@ -541,6 +614,7 @@ function registerAPIs(app) {
     });
 
     app.post('/upload_material', async (req, res) => {
+        logManager.info('"/upload_material" api is called');
         const { files } = req;
         if (files.myFile == null) {
             response({ result: false }, res);
@@ -565,7 +639,7 @@ function registerAPIs(app) {
         const newpath = config.materialPath + files.myFile.name;
         mv(oldpath, newpath, async (err) => {
             if (err) {
-                console.log(err);
+                logManager.error(err);
                 response({ result: false }, res);
                 return;
             }
@@ -575,7 +649,7 @@ function registerAPIs(app) {
 
                 archive.list((listErr, entries) => {
                     if (listErr !== null) {
-                        console.log(listErr);
+                        logManager.error(listErr);
                         response({ result: false }, res);
                         return;
                     }
@@ -621,7 +695,7 @@ function registerAPIs(app) {
                     { lazyEntries: true },
                     (openErr, zipfile) => {
                         if (openErr) {
-                            console.log(openErr);
+                            logManager.error(openErr);
                             response({ result: false }, res);
                             return;
                         }
@@ -685,6 +759,10 @@ function registerAPIs(app) {
         const address = req.fields.address;
         const amount = req.fields.amount;
 
+        logManager.info(
+            `"/verify/swap_request" api is called: id=${id} address=${address} amount=${amount}`
+        );
+
         if (id === null || !address || amount === null) {
             responseInvalid(res);
             return;
@@ -725,6 +803,10 @@ function registerAPIs(app) {
         const gameId = req.fields.game_id;
         const index = req.fields.index;
         const count = parseInt(req.fields.count, 10);
+
+        logManager.info(
+            `"/sync/txs" api is called: game_id=${gameId} index=${index} count=${count}`
+        );
 
         if (!gameId || !count) {
             response(
