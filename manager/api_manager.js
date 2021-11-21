@@ -258,10 +258,12 @@ function registerAPIs(app) {
         const { user_type } = req.fields;
         const { user } = req.fields;
 
+        /* eslint-disable camelcase */
         logManager.info(
             `"/discussion/new" api is called: stuff_id=${stuff_id} content=${content} ` +
                 `user_type=${user_type} user=${user}`
         );
+        /* eslint-enable camelcase */
 
         if (
             !isValidDiscussionParams({
@@ -293,9 +295,7 @@ function registerAPIs(app) {
     app.post('/comment', async (req, res) => {
         const { id } = req.fields;
 
-        logManager.info(
-            `"/comment" api is called: id=${id} account=${account} limit=${limit} cnt=${cnt}`
-        );
+        logManager.info(`"/comment" api is called: id=${id}`);
 
         const result = await databaseManager.getCommentByID(id);
 
@@ -323,10 +323,12 @@ function registerAPIs(app) {
         const { user_type } = req.fields;
         const { user } = req.fields;
 
+        /* eslint-disable camelcase */
         logManager.info(
             `"/comment/new" api is called: discussion_id=${discussion_id} parent_id=${parent_id} ` +
                 `content=${content} user_type=${user_type} user=${user}`
         );
+        /* eslint-enable camelcase */
 
         if (
             !isValidCommentParams({
@@ -378,6 +380,7 @@ function registerAPIs(app) {
         const likesOrUnlikes = req.fields.likes;
 
         logManager.info(
+            /* eslint-disable-next-line camelcase */
             `"/set_likes" api is called: discussion_id=${discussion_id} parent_id=${parent_id} ` +
                 `user=${user} likesOrUnlikes=${likesOrUnlikes}`
         );
@@ -413,6 +416,7 @@ function registerAPIs(app) {
         const { user } = req.fields;
 
         logManager.info(
+            /* eslint-disable-next-line camelcase */
             `"/get_likes" api is called: discussion_id=${discussion_id} parent_id=${parent_id} user=${user}`
         );
 
@@ -451,6 +455,7 @@ function registerAPIs(app) {
         const { cnt } = req.fields;
 
         logManager.info(
+            /* eslint-disable-next-line camelcase */
             `"/get_items_by_address" api is called: address=${address} sort_type=${sort_type} limit=${limit} cnt=${cnt}`
         );
 
@@ -491,6 +496,7 @@ function registerAPIs(app) {
         const { cnt } = req.fields;
 
         logManager.info(
+            /* eslint-disable-next-line camelcase */
             `"/get_market_items" api is called: game=${game} category=${category} sort_type=${sort_type} ` +
                 `limit=${limit} cnt=${cnt}`
         );
@@ -556,10 +562,13 @@ function registerAPIs(app) {
         const { description } = req.fields;
         const { price } = req.fields;
 
+        /* eslint-disable camelcase */
         logManager.info(
             `"/update_item_by_id" api is called: id=${id} game_id=${game_id} category_id=${category_id} name=${name} ` +
                 `is_anonymous=${is_anonymous} description=${description} price=${price}`
         );
+
+        /* eslint-enable camelcase */
 
         if (id == null) {
             responseInvalid(res);
