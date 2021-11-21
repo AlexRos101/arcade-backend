@@ -10,7 +10,7 @@ const CONST = require('../common/constants');
 const apiManager = require('./log_manager');
 
 function response(ret, res) {
-    apiManager.info(ret);
+    apiManager.info(`api return: ${ret}`);
 
     res.setHeader('content-type', 'text/plain');
     res.setHeader('Access-Control-Allow-Origin', '*');
