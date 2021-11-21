@@ -7,10 +7,10 @@ const databaseManager = require('./database_manager');
 const config = require('../common/config');
 const gameAPI = require('../adapter/game_api');
 const CONST = require('../common/constants');
-const apiManager = require('./log_manager');
+const logManager = require('./log_manager');
 
 function response(ret, res) {
-    apiManager.info(`api return: ${ret}`);
+    logManager.info(`api return: ${ret}`);
 
     res.setHeader('content-type', 'text/plain');
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -67,7 +67,7 @@ function isValidCommentParams(params) {
 
 function registerAPIs(app) {
     app.post('/stuff/all', async (req, res) => {
-        apiManager.info(`"/stuff/all" api is called`);
+        logManager.info('"/stuff/all" api is called');
 
         const stuffs = await databaseManager.getStuff(null);
 
@@ -99,7 +99,7 @@ function registerAPIs(app) {
     app.post('/stuff/search', async (req, res) => {
         const { keyword } = req.fields;
 
-        apiManager.info(`"/stuff/search" api is called: keyword=${keyword}`);
+        logManager.info(`"/stuff/search" api is called: keyword=${keyword}`);
 
         const stuffs = await databaseManager.getStuff(null);
 
@@ -125,7 +125,7 @@ function registerAPIs(app) {
     app.post('/stuff', async (req, res) => {
         const { id } = req.fields;
 
-        apiManager.info(`"/stuff" api is called: id=${id}`);
+        logManager.info(`"/stuff" api is called: id=${id}`);
 
         const stuff = await databaseManager.getStuff(id);
 
@@ -142,7 +142,9 @@ function registerAPIs(app) {
         const { limit } = req.fields;
         const { cnt } = req.fields;
 
-        apiManager.info(`"/discussion/all" api is called: id=${id} limit=${limit} cnt=${cnt}`);
+        logManager.info(
+            `"/discussion/all" api is called: id=${id} limit=${limit} cnt=${cnt}`
+        );
 
         const discussions = await databaseManager.getDiscussion(id, limit, cnt);
         for (let i = 0; i < discussions.length; i++) {
@@ -170,7 +172,9 @@ function registerAPIs(app) {
         const { limit } = req.fields;
         const { cnt } = req.fields;
 
-        apiManager.info(`"/discussion" api is called: id=${id} account=${account} limit=${limit} cnt=${cnt}`);
+        logManager.info(
+            `"/discussion" api is called: id=${id} account=${account} limit=${limit} cnt=${cnt}`
+        );
 
         let total = 0;
 
@@ -254,9 +258,9 @@ function registerAPIs(app) {
         const { user_type } = req.fields;
         const { user } = req.fields;
 
-        apiManager.info(
+        logManager.info(
             `"/discussion/new" api is called: stuff_id=${stuff_id} content=${content} ` +
-            `user_type=${user_type} user=${user}`
+                `user_type=${user_type} user=${user}`
         );
 
         if (
@@ -289,7 +293,9 @@ function registerAPIs(app) {
     app.post('/comment', async (req, res) => {
         const { id } = req.fields;
 
-        apiManager.info(`"/comment" api is called: id=${id} account=${account} limit=${limit} cnt=${cnt}`);
+        logManager.info(
+            `"/comment" api is called: id=${id} account=${account} limit=${limit} cnt=${cnt}`
+        );
 
         const result = await databaseManager.getCommentByID(id);
 
@@ -317,9 +323,9 @@ function registerAPIs(app) {
         const { user_type } = req.fields;
         const { user } = req.fields;
 
-        apiManager.info(
+        logManager.info(
             `"/comment/new" api is called: discussion_id=${discussion_id} parent_id=${parent_id} ` +
-            `content=${content} user_type=${user_type} user=${user}`
+                `content=${content} user_type=${user_type} user=${user}`
         );
 
         if (
@@ -352,7 +358,7 @@ function registerAPIs(app) {
     });
 
     app.post('/get_games', async (req, res) => {
-        apiManager.info(`"/get_games" api is called`);
+        logManager.info('"/get_games" api is called');
         const result = await databaseManager.getGames();
 
         const ret = {
@@ -371,9 +377,9 @@ function registerAPIs(app) {
         const { user } = req.fields;
         const likesOrUnlikes = req.fields.likes;
 
-        apiManager.info(
+        logManager.info(
             `"/set_likes" api is called: discussion_id=${discussion_id} parent_id=${parent_id} ` +
-            `user=${user} likesOrUnlikes=${likesOrUnlikes}`
+                `user=${user} likesOrUnlikes=${likesOrUnlikes}`
         );
 
         let result = {};
@@ -406,7 +412,7 @@ function registerAPIs(app) {
         const { parent_id } = req.fields;
         const { user } = req.fields;
 
-        apiManager.info(
+        logManager.info(
             `"/get_likes" api is called: discussion_id=${discussion_id} parent_id=${parent_id} user=${user}`
         );
 
@@ -425,7 +431,7 @@ function registerAPIs(app) {
     });
 
     app.post('/get_categories', async (req, res) => {
-        apiManager.info(`"/get_categories" api is called`);
+        logManager.info('"/get_categories" api is called');
 
         const result = await databaseManager.getCategories();
 
@@ -444,7 +450,7 @@ function registerAPIs(app) {
         const { limit } = req.fields;
         const { cnt } = req.fields;
 
-        apiManager.info(
+        logManager.info(
             `"/get_items_by_address" api is called: address=${address} sort_type=${sort_type} limit=${limit} cnt=${cnt}`
         );
 
@@ -484,9 +490,9 @@ function registerAPIs(app) {
         const { limit } = req.fields;
         const { cnt } = req.fields;
 
-        apiManager.info(
+        logManager.info(
             `"/get_market_items" api is called: game=${game} category=${category} sort_type=${sort_type} ` +
-            `limit=${limit} cnt=${cnt}`
+                `limit=${limit} cnt=${cnt}`
         );
 
         if (
@@ -521,7 +527,7 @@ function registerAPIs(app) {
     app.post('/get_item_by_id', async (req, res) => {
         const { id } = req.fields;
 
-        apiManager.info(`"/get_item_by_id" api is called: id=${id}`);
+        logManager.info(`"/get_item_by_id" api is called: id=${id}`);
 
         if (id == null) {
             responseInvalid(res);
@@ -550,9 +556,9 @@ function registerAPIs(app) {
         const { description } = req.fields;
         const { price } = req.fields;
 
-        apiManager.info(
+        logManager.info(
             `"/update_item_by_id" api is called: id=${id} game_id=${game_id} category_id=${category_id} name=${name} ` +
-            `is_anonymous=${is_anonymous} description=${description} price=${price}`
+                `is_anonymous=${is_anonymous} description=${description} price=${price}`
         );
 
         if (id == null) {
@@ -581,7 +587,7 @@ function registerAPIs(app) {
     app.post('/get_item_by_tokenid', async (req, res) => {
         const id = req.fields.token_id;
 
-        apiManager.info(`"/get_item_by_tokenid" api is called: token_id=${id}`);
+        logManager.info(`"/get_item_by_tokenid" api is called: token_id=${id}`);
 
         if (id == null) {
             responseInvalid(res);
@@ -599,7 +605,7 @@ function registerAPIs(app) {
     });
 
     app.post('/upload_material', async (req, res) => {
-        apiManager.info(`"/upload_material" api is called`);
+        logManager.info('"/upload_material" api is called');
         const { files } = req;
         if (files.myFile == null) {
             response({ result: false }, res);
@@ -634,7 +640,7 @@ function registerAPIs(app) {
 
                 archive.list((listErr, entries) => {
                     if (listErr !== null) {
-                        apiManager.error(listErr);
+                        logManager.error(listErr);
                         response({ result: false }, res);
                         return;
                     }
@@ -680,7 +686,7 @@ function registerAPIs(app) {
                     { lazyEntries: true },
                     (openErr, zipfile) => {
                         if (openErr) {
-                            apiManager.error(openErr);
+                            logManager.error(openErr);
                             response({ result: false }, res);
                             return;
                         }
@@ -744,7 +750,9 @@ function registerAPIs(app) {
         const address = req.fields.address;
         const amount = req.fields.amount;
 
-        apiManager.info(`"/verify/swap_request" api is called: id=${id} address=${address} amount=${amount}`);
+        logManager.info(
+            `"/verify/swap_request" api is called: id=${id} address=${address} amount=${amount}`
+        );
 
         if (id === null || !address || amount === null) {
             responseInvalid(res);
@@ -787,7 +795,9 @@ function registerAPIs(app) {
         const index = req.fields.index;
         const count = parseInt(req.fields.count, 10);
 
-        apiManager.info(`"/sync/txs" api is called: game_id=${gameId} index=${index} count=${count}`);
+        logManager.info(
+            `"/sync/txs" api is called: game_id=${gameId} index=${index} count=${count}`
+        );
 
         if (!gameId || !count) {
             response(
