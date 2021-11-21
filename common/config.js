@@ -15,7 +15,7 @@ const config = {
 
     contractArcadeDoge: '0xEA071968Faf66BE3cc424102fE9DE2F63BBCD12D',
     contractBUSD: '0x8301f2213c0eed49a7e28ae4c3e91722919b8b47',
-    contractSwap: '0xbB85c903178FF4444FED1C61b105BeDaba7E9027',
+    contractSwap: '0x1B961263c6BCd6F6730E9Dc5d0e75b894Cc8Af9D',
 
     backendKey: 'ArcadeDogeBackend',
     gameBackendUrl: 'http://localhost:4001',
