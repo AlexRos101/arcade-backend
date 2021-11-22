@@ -1,8 +1,8 @@
 const config = {
     portNumber: 4000,
 
-    contractExchange: '0x618f28978CFcFcC3ED3c61E1572BD7d547a96718',
-    contractNFT: '0x2BE5E405dD3a74e293eBa1cbbc9a8577fd2257B6',
+    contractExchange: '0x99a5ee00c06F2dc75765f45a941B8595E4d5e054',
+    contractNFT: '0x70C1847626808DCFC914738e35Bf97AC3568916c',
 
     materialPath: '/var/www/html/arcadedoge/materials/',
     thumbnailPath: '/var/www/html/arcadedoge/thumbnails/',
@@ -15,7 +15,7 @@ const config = {
 
     contractArcadeDoge: '0xEA071968Faf66BE3cc424102fE9DE2F63BBCD12D',
     contractBUSD: '0x8301f2213c0eed49a7e28ae4c3e91722919b8b47',
-    contractSwap: '0x1B961263c6BCd6F6730E9Dc5d0e75b894Cc8Af9D',
+    contractSwap: '0x6b1059D884BfCF47B92F76Bd84E1aCEa6ed6680B',
 
     backendKey: 'ArcadeDogeBackend',
     gameBackendUrl: 'http://localhost:4001',
