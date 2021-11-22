@@ -44,8 +44,17 @@ function warn(msg) {
     logger.warn(msg);
 }
 
+function getRandomInt(max) {
+    return Math.floor(Math.random() * max);
+}
+
+function generateLogIndex() {
+    return getRandomInt(10000);
+}
+
 module.exports = {
     info,
     error,
     warn,
+    generateLogIndex,
 };
