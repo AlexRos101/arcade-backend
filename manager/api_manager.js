@@ -9,8 +9,8 @@ const gameAPI = require('../adapter/game_api');
 const CONST = require('../common/constants');
 const logManager = require('./log_manager');
 
-function response(ret, res) {
-    logManager.info(`api return: ${JSON.stringify(ret)}`);
+function response(ret, res, logIndex) {
+    logManager.info(`index: ${logIndex}, ${JSON.stringify(ret)}`);
 
     res.setHeader('content-type', 'text/plain');
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -18,12 +18,12 @@ function response(ret, res) {
     res.json(ret);
 }
 
-function responseInvalid(res) {
+function responseInvalid(res, logIndex) {
     const ret = {
         result: false,
         msg: 'validation failed!',
     };
-    response(ret, res);
+    response(ret, res, logIndex);
 }
 
 function isValidDiscussionParams(params) {
@@ -67,7 +67,8 @@ function isValidCommentParams(params) {
 
 function registerAPIs(app) {
     app.post('/stuff/all', async (req, res) => {
-        logManager.info('"/stuff/all" api is called');
+        const logIndex = logManager.generateLogIndex();
+        logManager.info(`index: ${logIndex}, "/stuff/all" api is called`);
 
         const stuffs = await databaseManager.getStuff(null);
 
@@ -93,13 +94,16 @@ function registerAPIs(app) {
             data: stuffs,
         };
 
-        response(ret, res);
+        response(ret, res, logIndex);
     });
 
     app.post('/stuff/search', async (req, res) => {
         const { keyword } = req.fields;
 
-        logManager.info(`"/stuff/search" api is called: keyword=${keyword}`);
+        const logIndex = logManager.generateLogIndex();
+        logManager.info(
+            `index: ${logIndex}, "/stuff/search" api is called: keyword=${keyword}`
+        );
 
         const stuffs = await databaseManager.getStuff(null);
 
@@ -119,13 +123,14 @@ function registerAPIs(app) {
             data: stuffs,
         };
 
-        response(ret, res);
+        response(ret, res, logIndex);
     });
 
     app.post('/stuff', async (req, res) => {
         const { id } = req.fields;
 
-        logManager.info(`"/stuff" api is called: id=${id}`);
+        const logIndex = logManager.generateLogIndex();
+        logManager.info(`index: ${logIndex}, "/stuff" api is called: id=${id}`);
 
         const stuff = await databaseManager.getStuff(id);
 
@@ -134,7 +139,7 @@ function registerAPIs(app) {
             data: stuff,
         };
 
-        response(ret, res);
+        response(ret, res, logIndex);
     });
 
     app.post('/discussion/all', async (req, res) => {
@@ -142,8 +147,9 @@ function registerAPIs(app) {
         const { limit } = req.fields;
         const { cnt } = req.fields;
 
+        const logIndex = logManager.generateLogIndex();
         logManager.info(
-            `"/discussion/all" api is called: id=${id} limit=${limit} cnt=${cnt}`
+            `index: ${logIndex}, "/discussion/all" api is called: id=${id} limit=${limit} cnt=${cnt}`
         );
 
         const discussions = await databaseManager.getDiscussion(id, limit, cnt);
@@ -163,7 +169,7 @@ function registerAPIs(app) {
             total,
         };
 
-        response(ret, res);
+        response(ret, res, logIndex);
     });
 
     app.post('/discussion', async (req, res) => {
@@ -172,8 +178,9 @@ function registerAPIs(app) {
         const { limit } = req.fields;
         const { cnt } = req.fields;
 
+        const logIndex = logManager.generateLogIndex();
         logManager.info(
-            `"/discussion" api is called: id=${id} account=${account} limit=${limit} cnt=${cnt}`
+            `index: ${logIndex}, "/discussion" api is called: id=${id} account=${account} limit=${limit} cnt=${cnt}`
         );
 
         let total = 0;
@@ -247,7 +254,7 @@ function registerAPIs(app) {
             total,
         };
 
-        response(ret, res);
+        response(ret, res, logIndex);
     });
 
     app.post('/discussion/new', async (req, res) => {
@@ -258,9 +265,10 @@ function registerAPIs(app) {
         const { user_type } = req.fields;
         const { user } = req.fields;
 
+        const logIndex = logManager.generateLogIndex();
         /* eslint-disable camelcase */
         logManager.info(
-            `"/discussion/new" api is called: stuff_id=${stuff_id} content=${content} ` +
+            `index: ${logIndex}, "/discussion/new" api is called: stuff_id=${stuff_id} content=${content} ` +
                 `user_type=${user_type} user=${user}`
         );
         /* eslint-enable camelcase */
@@ -273,7 +281,7 @@ function registerAPIs(app) {
                 user,
             })
         ) {
-            responseInvalid(res);
+            responseInvalid(res, logIndex);
             return;
         }
 
@@ -289,13 +297,16 @@ function registerAPIs(app) {
             data: result,
         };
 
-        response(ret, res);
+        response(ret, res, logIndex);
     });
 
     app.post('/comment', async (req, res) => {
         const { id } = req.fields;
 
-        logManager.info(`"/comment" api is called: id=${id}`);
+        const logIndex = logManager.generateLogIndex();
+        logManager.info(
+            `index: ${logIndex}, "/comment" api is called: id=${id}`
+        );
 
         const result = await databaseManager.getCommentByID(id);
 
@@ -310,7 +321,7 @@ function registerAPIs(app) {
             data: result,
         };
 
-        response(ret, res);
+        response(ret, res, logIndex);
     });
 
     app.post('/comment/new', async (req, res) => {
@@ -323,9 +334,10 @@ function registerAPIs(app) {
         const { user_type } = req.fields;
         const { user } = req.fields;
 
+        const logIndex = logManager.generateLogIndex();
         /* eslint-disable camelcase */
         logManager.info(
-            `"/comment/new" api is called: discussion_id=${discussion_id} parent_id=${parent_id} ` +
+            `index: ${logIndex}, "/comment/new" api is called: discussion_id=${discussion_id} parent_id=${parent_id} ` +
                 `content=${content} user_type=${user_type} user=${user}`
         );
         /* eslint-enable camelcase */
@@ -339,7 +351,7 @@ function registerAPIs(app) {
                 user,
             })
         ) {
-            responseInvalid(res);
+            responseInvalid(res, logIndex);
             return;
         }
 
@@ -356,11 +368,12 @@ function registerAPIs(app) {
             data: result,
         };
 
-        response(ret, res);
+        response(ret, res, logIndex);
     });
 
     app.post('/get_games', async (req, res) => {
-        logManager.info('"/get_games" api is called');
+        const logIndex = logManager.generateLogIndex();
+        logManager.info(`index: ${logIndex}, "/get_games" api is called`);
         const result = await databaseManager.getGames();
 
         const ret = {
@@ -368,7 +381,7 @@ function registerAPIs(app) {
             data: result,
         };
 
-        response(ret, res);
+        response(ret, res, logIndex);
     });
 
     app.post('/set_likes', async (req, res) => {
@@ -379,9 +392,10 @@ function registerAPIs(app) {
         const { user } = req.fields;
         const likesOrUnlikes = req.fields.likes;
 
+        const logIndex = logManager.generateLogIndex();
         logManager.info(
             /* eslint-disable-next-line camelcase */
-            `"/set_likes" api is called: discussion_id=${discussion_id} parent_id=${parent_id} ` +
+            `index: ${logIndex}, "/set_likes" api is called: discussion_id=${discussion_id} parent_id=${parent_id} ` +
                 `user=${user} likesOrUnlikes=${likesOrUnlikes}`
         );
 
@@ -405,7 +419,7 @@ function registerAPIs(app) {
             data: result,
         };
 
-        response(ret, res);
+        response(ret, res, logIndex);
     });
 
     app.post('/get_likes', async (req, res) => {
@@ -415,9 +429,12 @@ function registerAPIs(app) {
         const { parent_id } = req.fields;
         const { user } = req.fields;
 
+        const logIndex = logManager.generateLogIndex();
         logManager.info(
-            /* eslint-disable-next-line camelcase */
-            `"/get_likes" api is called: discussion_id=${discussion_id} parent_id=${parent_id} user=${user}`
+            /* eslint-disable camelcase */
+            `index: ${logIndex}, "/get_likes" api is called: discussion_id=${discussion_id} ` +
+                `parent_id=${parent_id} user=${user}`
+            /* eslint-enable camelcase */
         );
 
         const result = await databaseManager.getLikes(
@@ -431,11 +448,12 @@ function registerAPIs(app) {
             data: result,
         };
 
-        response(ret, res);
+        response(ret, res, logIndex);
     });
 
     app.post('/get_categories', async (req, res) => {
-        logManager.info('"/get_categories" api is called');
+        const logIndex = logManager.generateLogIndex();
+        logManager.info(`index: ${logIndex}, "/get_categories" api is called`);
 
         const result = await databaseManager.getCategories();
 
@@ -444,7 +462,7 @@ function registerAPIs(app) {
             data: result,
         };
 
-        response(ret, res);
+        response(ret, res, logIndex);
     });
 
     app.post('/get_items_by_address', async (req, res) => {
@@ -454,9 +472,11 @@ function registerAPIs(app) {
         const { limit } = req.fields;
         const { cnt } = req.fields;
 
+        const logIndex = logManager.generateLogIndex();
         logManager.info(
             /* eslint-disable-next-line camelcase */
-            `"/get_items_by_address" api is called: address=${address} sort_type=${sort_type} limit=${limit} cnt=${cnt}`
+            `index: ${logIndex}, "/get_items_by_address" api is called: address=${address} sort_type=${sort_type} ` +
+                `limit=${limit} cnt=${cnt}`
         );
 
         if (
@@ -466,7 +486,7 @@ function registerAPIs(app) {
             limit === null ||
             cnt === null
         ) {
-            responseInvalid(res);
+            responseInvalid(res, logIndex);
             return;
         }
 
@@ -484,7 +504,7 @@ function registerAPIs(app) {
             total,
         };
 
-        response(ret, res);
+        response(ret, res, logIndex);
     });
 
     app.post('/get_market_items', async (req, res) => {
@@ -495,10 +515,12 @@ function registerAPIs(app) {
         const { limit } = req.fields;
         const { cnt } = req.fields;
 
+        const logIndex = logManager.generateLogIndex();
         logManager.info(
-            /* eslint-disable-next-line camelcase */
-            `"/get_market_items" api is called: game=${game} category=${category} sort_type=${sort_type} ` +
-                `limit=${limit} cnt=${cnt}`
+            /* eslint-disable camelcase */
+            `index: ${logIndex}, "/get_market_items" api is called: game=${game} category=${category} ` +
+                `sort_type=${sort_type} limit=${limit} cnt=${cnt}`
+            /* eslint-enable camelcase */
         );
 
         if (
@@ -509,7 +531,7 @@ function registerAPIs(app) {
             limit == null ||
             cnt == null
         ) {
-            responseInvalid(res);
+            responseInvalid(res, logIndex);
             return;
         }
 
@@ -527,16 +549,19 @@ function registerAPIs(app) {
             total,
         };
 
-        response(ret, res);
+        response(ret, res, logIndex);
     });
 
     app.post('/get_item_by_id', async (req, res) => {
         const { id } = req.fields;
 
-        logManager.info(`"/get_item_by_id" api is called: id=${id}`);
+        const logIndex = logManager.generateLogIndex();
+        logManager.info(
+            `index: ${logIndex}, "/get_item_by_id" api is called: id=${id}`
+        );
 
         if (id == null) {
-            responseInvalid(res);
+            responseInvalid(res, logIndex);
             return;
         }
 
@@ -547,7 +572,7 @@ function registerAPIs(app) {
             data: result,
         };
 
-        response(ret, res);
+        response(ret, res, logIndex);
     });
 
     app.post('/update_item_by_id', async (req, res) => {
@@ -562,16 +587,17 @@ function registerAPIs(app) {
         const { description } = req.fields;
         const { price } = req.fields;
 
+        const logIndex = logManager.generateLogIndex();
         /* eslint-disable camelcase */
         logManager.info(
-            `"/update_item_by_id" api is called: id=${id} game_id=${game_id} category_id=${category_id} name=${name} ` +
+            `index: ${logIndex}, "/update_item_by_id" api is called: id=${id} game_id=${game_id} ` +
+                `category_id=${category_id} name=${name} ` +
                 `is_anonymous=${is_anonymous} description=${description} price=${price}`
         );
-
         /* eslint-enable camelcase */
 
         if (id == null) {
-            responseInvalid(res);
+            responseInvalid(res, logIndex);
             return;
         }
 
@@ -590,16 +616,19 @@ function registerAPIs(app) {
             data: result,
         };
 
-        response(ret, res);
+        response(ret, res, logIndex);
     });
 
     app.post('/get_item_by_tokenid', async (req, res) => {
         const id = req.fields.token_id;
 
-        logManager.info(`"/get_item_by_tokenid" api is called: token_id=${id}`);
+        const logIndex = logManager.generateLogIndex();
+        logManager.info(
+            `index: ${logIndex}, "/get_item_by_tokenid" api is called: token_id=${id}`
+        );
 
         if (id == null) {
-            responseInvalid(res);
+            responseInvalid(res, logIndex);
             return;
         }
 
@@ -610,14 +639,15 @@ function registerAPIs(app) {
             data: result,
         };
 
-        response(ret, res);
+        response(ret, res, logIndex);
     });
 
     app.post('/upload_material', async (req, res) => {
-        logManager.info('"/upload_material" api is called');
+        const logIndex = logManager.generateLogIndex();
+        logManager.info(`index: ${logIndex}, "/upload_material" api is called`);
         const { files } = req;
         if (files.myFile == null) {
-            response({ result: false }, res);
+            response({ result: false }, res, logIndex);
             return;
         }
 
@@ -631,7 +661,7 @@ function registerAPIs(app) {
                 files.myFile.name.length
             ) !== '.zip'
         ) {
-            response({ result: false }, res);
+            response({ result: false }, res, logIndex);
             return;
         }
 
@@ -639,8 +669,8 @@ function registerAPIs(app) {
         const newpath = config.materialPath + files.myFile.name;
         mv(oldpath, newpath, async (err) => {
             if (err) {
-                logManager.error(err);
-                response({ result: false }, res);
+                logManager.error(`index: ${logIndex}, ${JSON.stringify(err)}`);
+                response({ result: false }, res, logIndex);
                 return;
             }
 
@@ -649,8 +679,10 @@ function registerAPIs(app) {
 
                 archive.list((listErr, entries) => {
                     if (listErr !== null) {
-                        logManager.error(listErr);
-                        response({ result: false }, res);
+                        logManager.error(
+                            `index: ${logIndex}, ${JSON.stringify(listErr)}`
+                        );
+                        response({ result: false }, res, logIndex);
                         return;
                     }
 
@@ -660,7 +692,7 @@ function registerAPIs(app) {
                         if (type === 'File' && name === 'thumbnail.png') {
                             const stream = archive.stream('thumbnail.png'); // name of entry
                             stream.on('error', () => {
-                                response({ result: false });
+                                response({ result: false }, res, logIndex);
                             });
                             stream.pipe(
                                 fs.createWriteStream(
@@ -673,7 +705,7 @@ function registerAPIs(app) {
                                 )
                             );
 
-                            response({ result: true }, res);
+                            response({ result: true }, res, logIndex);
                             return;
                         }
                     }
@@ -684,7 +716,8 @@ function registerAPIs(app) {
                             code: -1,
                             msg: 'Not exist thumbnail file.',
                         },
-                        res
+                        res,
+                        logIndex
                     );
                 });
             } else if (
@@ -695,8 +728,10 @@ function registerAPIs(app) {
                     { lazyEntries: true },
                     (openErr, zipfile) => {
                         if (openErr) {
-                            logManager.error(openErr);
-                            response({ result: false }, res);
+                            logManager.error(
+                                `index: ${logIndex}, ${JSON.stringify(openErr)}`
+                            );
+                            response({ result: false }, res, logIndex);
                             return;
                         }
 
@@ -708,7 +743,11 @@ function registerAPIs(app) {
                                     entry,
                                     (entryErr, readStream) => {
                                         if (entryErr) {
-                                            response({ result: false }, res);
+                                            response(
+                                                { result: false },
+                                                res,
+                                                logIndex
+                                            );
                                             return;
                                         }
 
@@ -736,7 +775,7 @@ function registerAPIs(app) {
                             zipfile.close();
 
                             if (existThumbnail) {
-                                response({ result: true }, res);
+                                response({ result: true }, res, logIndex);
                             } else {
                                 response(
                                     {
@@ -744,7 +783,8 @@ function registerAPIs(app) {
                                         code: -1,
                                         msg: 'Not exist thumbnail file.',
                                     },
-                                    res
+                                    res,
+                                    logIndex
                                 );
                             }
                         });
@@ -759,19 +799,36 @@ function registerAPIs(app) {
         const address = req.fields.address;
         const amount = req.fields.amount;
 
+        const logIndex = logManager.generateLogIndex();
         logManager.info(
-            `"/verify/swap_request" api is called: id=${id} address=${address} amount=${amount}`
+            `index: ${logIndex}, "/verify/swap_request" api is called: id=${id} address=${address} amount=${amount}`
         );
 
         if (id === null || !address || amount === null) {
-            responseInvalid(res);
+            responseInvalid(res, logIndex);
             return;
         }
 
-        const gameBackendVerification = await gameAPI.verifySwapRequest(
-            address,
-            amount
-        );
+        let gameBackendVerification;
+        try {
+            gameBackendVerification = await gameAPI.verifySwapRequest(
+                address,
+                amount
+            );
+        } catch (err) {
+            logManager.error(
+                `index: ${logIndex}, error=${JSON.stringify(err)}`
+            );
+            response(
+                {
+                    result: false,
+                    msg: 'Verification falied.',
+                },
+                res,
+                logIndex
+            );
+            return;
+        }
 
         if (gameBackendVerification.result === CONST.RET_CODE.SUCCESS) {
             const backendSign = soliditySha3(
@@ -786,7 +843,8 @@ function registerAPIs(app) {
                         verification_token: backendSign,
                     },
                 },
-                res
+                res,
+                logIndex
             );
         } else {
             response(
@@ -794,7 +852,8 @@ function registerAPIs(app) {
                     result: false,
                     msg: gameBackendVerification.msg,
                 },
-                res
+                res,
+                logIndex
             );
         }
     });
@@ -804,8 +863,9 @@ function registerAPIs(app) {
         const index = req.fields.index;
         const count = parseInt(req.fields.count, 10);
 
+        const logIndex = logManager.generateLogIndex();
         logManager.info(
-            `"/sync/txs" api is called: game_id=${gameId} index=${index} count=${count}`
+            `index: ${logIndex}, "/sync/txs" api is called: game_id=${gameId} index=${index} count=${count}`
         );
 
         if (!gameId || !count) {
@@ -814,7 +874,8 @@ function registerAPIs(app) {
                     result: CONST.GAME_RET_CODE.INVALID_PARAMETERS,
                     msg: 'Validation failed.',
                 },
-                res
+                res,
+                logIndex
             );
             return;
         }
@@ -826,7 +887,8 @@ function registerAPIs(app) {
                     result: CONST.GAME_RET_CODE.SUCCESS,
                     data: txs,
                 },
-                res
+                res,
+                logIndex
             );
         } else {
             response(
@@ -834,7 +896,8 @@ function registerAPIs(app) {
                     result: CONST.GAME_RET_CODE.FAILED,
                     msg: 'Internal Error',
                 },
-                res
+                res,
+                logIndex
             );
         }
     });
