@@ -3,6 +3,7 @@ const Unrar = require('unrar');
 const yauzl = require('yauzl');
 const fs = require('fs');
 const { soliditySha3 } = require('web3-utils');
+const ethers = require('ethers');
 const databaseManager = require('./database_manager');
 const config = require('../common/config');
 const gameAPI = require('../adapter/game_api');
@@ -26,7 +27,13 @@ function responseInvalid(res, logIndex) {
     response(ret, res, logIndex);
 }
 
-function isValidDiscussionParams(params) {
+async function checkSign(text, signature, account) {
+    const signAddress = await ethers.utils.verifyMessage(text, signature)
+  
+    return (signAddress === account)
+}
+
+async function isValidDiscussionParams(params) {
     if (params.stuff_id == null || params.stuff_id <= 0) {
         return false;
     }
@@ -39,11 +46,11 @@ function isValidDiscussionParams(params) {
     if (params.user_type === 0 && !params.user) {
         return false;
     }
-
-    return true;
+    
+    return await checkSign(params.content, params.signature, params.account);
 }
 
-function isValidCommentParams(params) {
+async function isValidCommentParams(params) {
     if (params.discussion_id == null || params.discussion_id <= 0) {
         return false;
     }
@@ -62,8 +69,10 @@ function isValidCommentParams(params) {
         return false;
     }
 
-    return true;
+    return await checkSign(params.content, params.signature, params.account);
 }
+
+
 
 function registerAPIs(app) {
     app.post('/stuff/all', async (req, res) => {
@@ -264,6 +273,8 @@ function registerAPIs(app) {
         /* eslint-disable-next-line camelcase */
         const { user_type } = req.fields;
         const { user } = req.fields;
+        const { signature } = req.fields;
+        const { account } = req.fields;
 
         const logIndex = logManager.generateLogIndex();
         /* eslint-disable camelcase */
@@ -274,12 +285,14 @@ function registerAPIs(app) {
         /* eslint-enable camelcase */
 
         if (
-            !isValidDiscussionParams({
+            await isValidDiscussionParams({
                 stuff_id,
                 content,
                 user_type,
                 user,
-            })
+                signature,
+                account
+            }) === false
         ) {
             responseInvalid(res, logIndex);
             return;
@@ -333,6 +346,8 @@ function registerAPIs(app) {
         /* eslint-disable-next-line camelcase */
         const { user_type } = req.fields;
         const { user } = req.fields;
+        const { signature } = req.fields;
+        const { account } = req.fields;
 
         const logIndex = logManager.generateLogIndex();
         /* eslint-disable camelcase */
@@ -343,13 +358,15 @@ function registerAPIs(app) {
         /* eslint-enable camelcase */
 
         if (
-            !isValidCommentParams({
+            await isValidCommentParams({
                 discussion_id,
                 parent_id,
                 content,
                 user_type,
                 user,
-            })
+                signature,
+                account
+            }) === false
         ) {
             responseInvalid(res, logIndex);
             return;
