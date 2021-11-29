@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Sep 27, 2021 at 03:20 PM
+-- Generation Time: Nov 13, 2021 at 11:37 AM
 -- Server version: 10.4.11-MariaDB
 -- PHP Version: 7.4.4
 
@@ -110,12 +110,16 @@ INSERT INTO `tbl_game` (`id`, `name`, `created_at`, `updated_at`) VALUES
 
 CREATE TABLE `tbl_history` (
   `id` int(11) NOT NULL,
-  `token_id` int(11) NOT NULL,
+  `txid` varchar(128) COLLATE utf8_unicode_ci NOT NULL,
+  `game_id` int(11) DEFAULT NULL,
+  `token_id` int(11) DEFAULT NULL,
   `from_address` varchar(128) COLLATE utf8_unicode_ci NOT NULL,
   `to_address` varchar(128) COLLATE utf8_unicode_ci NOT NULL,
-  `asset_id` int(11) DEFAULT NULL,
-  `amount` int(11) DEFAULT NULL,
-  `type` int(11) NOT NULL DEFAULT 0 COMMENT '1: mint, 2: exchange, 3: burn, 4: transfer',
+  `asset_id` varchar(128) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `token_amount` varchar(32) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `gamepoint_amount` int(11) DEFAULT NULL,
+  `type` int(11) NOT NULL DEFAULT 0 COMMENT '1: mint, 2: exchange, 3: burn, 4: transfer,\r\n5: deposit(token->gamepoint), 6: withdraw(gamepoint->token)',
+  `block_timestamp` bigint(13) NOT NULL,
   `created_at` datetime NOT NULL DEFAULT current_timestamp(),
   `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
@@ -131,7 +135,7 @@ CREATE TABLE `tbl_item` (
   `game_id` int(11) NOT NULL,
   `category_id` int(11) NOT NULL,
   `contract_address` varchar(128) COLLATE utf8_unicode_ci NOT NULL,
-  `token_id` int(13) NOT NULL,
+  `token_id` bigint(13) NOT NULL,
   `name` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `description` text COLLATE utf8_unicode_ci NOT NULL,
   `attach_url` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
@@ -168,7 +172,7 @@ CREATE TABLE `tbl_likes` (
 
 CREATE TABLE `tbl_status` (
   `id` int(11) NOT NULL,
-  `contract_type` int(11) NOT NULL COMMENT '1: NFT, 2: EXCHANGE',
+  `contract_type` int(11) NOT NULL COMMENT '1: NFT, 2: EXCHANGE, 3: SWAP',
   `block_number` int(11) NOT NULL DEFAULT 0,
   `created_at` datetime NOT NULL DEFAULT current_timestamp(),
   `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
@@ -179,8 +183,9 @@ CREATE TABLE `tbl_status` (
 --
 
 INSERT INTO `tbl_status` (`id`, `contract_type`, `block_number`, `created_at`, `updated_at`) VALUES
-(1, 1, 12730546, '0000-00-00 00:00:00', '2021-09-27 20:30:34'),
-(2, 2, 12730554, '0000-00-00 00:00:00', '2021-09-27 20:31:01');
+(1, 1, 0, '0000-00-00 00:00:00', '2021-11-12 21:05:37'),
+(2, 2, 0, '0000-00-00 00:00:00', '2021-11-13 17:09:17'),
+(3, 3, 0, '2021-11-13 13:31:24', '2021-11-13 18:23:31');
 
 -- --------------------------------------------------------
 
@@ -303,7 +308,7 @@ ALTER TABLE `tbl_likes`
 -- AUTO_INCREMENT for table `tbl_status`
 --
 ALTER TABLE `tbl_status`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `tbl_stuff`

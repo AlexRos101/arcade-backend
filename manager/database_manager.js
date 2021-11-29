@@ -1,4 +1,5 @@
 const CONST = require('../common/constants');
+const logManager = require('./log_manager');
 
 /* eslint-disable */
 async function connect() {
@@ -9,7 +10,7 @@ async function connect() {
                 resolve(connection);
             })
             .catch((err) => {
-                console.log(err);
+                logManager.error(err);
                 reject(err);
             });
     });
@@ -32,7 +33,7 @@ async function rollbackTransaction(connection) {
 }
 
 async function onConnectionErr(connection, err, isRollBack = false) {
-    console.log(err);
+    logManager.error(err);
     if (connection == null) return;
     if (err.errono === CONST.MYSQL_ERR_NO.CONNECTION_ERROR) return;
     if (isRollBack) await rollbackTransaction(connection);
@@ -84,7 +85,8 @@ async function getStuff(stuffID) {
 
         return rows[0];
     } catch (err) {
-        onConnectionErr(connection, err);
+        logManager.error(`getStuff failed: stuffID=${stuffID}`);
+        await onConnectionErr(connection, err);
     }
 
     return null;
@@ -137,7 +139,10 @@ async function getDiscussion(stuffID, limit, cnt) {
         connection.release();
         return rows;
     } catch (err) {
-        onConnectionErr(connection, err);
+        logManager.error(
+            `getDiscussion failed: stuffID=${stuffID}, limit=${limit}, cnt=${cnt}`
+        );
+        await onConnectionErr(connection, err);
     }
 
     return [];
@@ -162,7 +167,10 @@ async function getDiscussionByKeyword(stuffID, limit, cnt, keyword) {
         connection.release();
         return rows;
     } catch (err) {
-        onConnectionErr(connection, err);
+        logManager.error(
+            `getDiscussionByKeyword failed: stuffID=${stuffID}, limit=${limit}, cnt=${cnt}, keyword=${keyword}`
+        );
+        await onConnectionErr(connection, err);
     }
 
     return [];
@@ -185,7 +193,8 @@ async function getDiscussionByID(id) {
 
         return rows[0];
     } catch (err) {
-        onConnectionErr(connection, err);
+        logManager.error(`getDiscussionByID failed: id=${id}`);
+        await onConnectionErr(connection, err);
     }
 
     return null;
@@ -205,7 +214,8 @@ async function getCommentByID(id) {
 
         return rows[0];
     } catch (err) {
-        onConnectionErr(connection, err);
+        logManager.error(`getCommentByID failed: id=${id}`);
+        await onConnectionErr(connection, err);
     }
 
     return null;
@@ -231,6 +241,7 @@ async function getComment(discussionID) {
         connection.release();
         return rows;
     } catch (err) {
+        logManager.error(`getComment failed: discussionID=${discussionID}`);
         onConnectionErr(err);
     }
 
@@ -260,6 +271,9 @@ async function addDiscussion(stuffID, content, userType, user) {
         ret = rows.insertId > 0;
         connection.release();
     } catch (err) {
+        logManager.error(
+            `addDiscussion failed: stuffID=${stuffID}, content=${content}, userType=${userType}, user=${user}`
+        );
         await onConnectionErr(connection, err, true);
     }
 
@@ -291,10 +305,33 @@ async function addComment(discussionID, parentID, content, userType, user) {
         ret = rows.insertId;
         connection.release();
     } catch (err) {
+        logManager.error(
+            `addComment failed: discussionID=${discussionID}, parentID=${parentID}, content=${content}, ` +
+                `userType=${userType}, user=${user}`
+        );
         await onConnectionErr(connection, err, true);
     }
 
     return ret;
+}
+
+async function getGameId(connection, tokenId) {
+    const res = -1;
+
+    try {
+        const query = 'SELECT game_id FROM tbl_item WHERE token_id = ?';
+        const [rows] = await mysqlExecute(connection, query, [tokenId]);
+
+        if (rows.length > 0) {
+            return rows[0].game_id;
+        }
+    } catch (err) {
+        logManager.error(
+            `getGameId failed: tokenId=${tokenId} error=${JSON.stringify(err)}`
+        );
+    }
+
+    return res;
 }
 
 async function addToken(connection, item) {
@@ -320,27 +357,40 @@ async function addToken(connection, item) {
         ]);
         ret = rows.insertId;
     } catch (err) {
-        console.log(err);
+        logManager.error(
+            `addToken failed: item=${JSON.stringify(
+                item
+            )}, error=${JSON.stringify(err)}`
+        );
+        logManager.error(err);
     }
     return ret;
 }
 
-async function addMintTx(connection, id, item) {
+async function addMintTx(connection, id, gameId, item, txid, timestamp) {
     let ret = false;
 
     try {
         const query =
-            'INSERT INTO tbl_history (token_id, from_address, to_address, type) ' +
-            'VALUE(?, ?, ?, ?)';
+            'INSERT INTO tbl_history (txid, game_id, token_id, from_address, to_address, type, block_timestamp) ' +
+            'VALUE(?, ?, ?, ?, ?, ?, ?)';
         const [rows] = await mysqlExecute(connection, query, [
+            txid,
+            gameId,
             id,
             item.owner,
             item.owner,
             CONST.TX_TYPE.MINT,
+            timestamp,
         ]);
         ret = rows.insertId > 0;
     } catch (err) {
-        console.log(err);
+        logManager.error(
+            `addMintTx failed: id=${id}, gameId=${gameId}, item=${JSON.stringify(
+                item
+            )}, txid=${txid}, ` +
+                `timestamp=${timestamp}, error=${JSON.stringify(err)}`
+        );
     }
 
     return ret;
@@ -358,13 +408,16 @@ async function updateSyncBlockNumber(connection, contractType, blockNumber) {
         ]);
         ret = rows.affectedRows > 0;
     } catch (err) {
-        console.log(err);
+        logManager.error(
+            `updateSyncBlockNumber failed: contractType=${contractType}, blockNumber=${blockNumber}, ` +
+                `error=${JSON.stringify(err)}`
+        );
     }
 
     return ret;
 }
 
-async function mintToken(item, blockNumber) {
+async function mintToken(item, txid, blockNumber, timestamp) {
     let connection = null;
     let ret = false;
 
@@ -376,7 +429,16 @@ async function mintToken(item, blockNumber) {
         const tokenID = await addToken(connection, item);
         if (tokenID === 0) throw new Error('Adding token failed.');
 
-        if (!(await addMintTx(connection, tokenID, item))) {
+        if (
+            !(await addMintTx(
+                connection,
+                tokenID,
+                item.game_id,
+                item,
+                txid,
+                timestamp
+            ))
+        ) {
             throw new Error('Adding mint tx failed.');
         }
 
@@ -396,6 +458,12 @@ async function mintToken(item, blockNumber) {
 
         connection.release();
     } catch (err) {
+        logManager.error(
+            `mintToken failed: item=${JSON.stringify(
+                item
+            )}, txid=${txid}, blockNumber=${blockNumber}, ` +
+                `timestamp=${timestamp}`
+        );
         await onConnectionErr(connection, err, true);
     }
 
@@ -414,7 +482,10 @@ async function getSyncBlockNumber(contractType) {
         ret = rows[0].block_number;
         connection.release();
     } catch (err) {
-        onConnectionErr(connection, err);
+        logManager.error(
+            `getSyncBlockNumber failed: contractType=${contractType}`
+        );
+        await onConnectionErr(connection, err);
     }
 
     return ret;
@@ -433,7 +504,8 @@ async function getTokenByID(id) {
 
         connection.release();
     } catch (err) {
-        onConnectionErr(connection, err);
+        logManager.error(`getTokenByID failed: id=${id}`);
+        await onConnectionErr(connection, err);
     }
 
     return ret;
@@ -471,7 +543,11 @@ async function updateTokenByID(
 
         connection.release();
     } catch (err) {
-        onConnectionErr(connection, err);
+        logManager.error(
+            `updateTokenByID failed: id=${id}, gameID=${gameID}, categoryID=${categoryID}, name=${name}, ` +
+                `description=${description}, isAnonymous=${isAnonymous}, price=${price}`
+        );
+        await onConnectionErr(connection, err);
     }
 
     return ret;
@@ -489,7 +565,8 @@ async function getTokenByTokenID(tokenID) {
         if (rows.length > 0) ret = rows[0];
         connection.release();
     } catch (err) {
-        onConnectionErr(connection, err);
+        logManager.error(`getTokenByTokenID failed: tokenID=${tokenID}`);
+        await onConnectionErr(connection, err);
     }
 
     return ret;
@@ -513,7 +590,10 @@ async function getTokenByContractInfo(contractAddress, tokenID) {
 
         connection.release();
     } catch (err) {
-        onConnectionErr(connection, err);
+        logManager.error(
+            `getTokenByContractInfo failed: contractAddress=${contractAddress}, tokenID=${tokenID}`
+        );
+        await onConnectionErr(connection, err);
     }
 
     return ret;
@@ -530,34 +610,50 @@ async function deleteToken(connection, id) {
         ]);
         ret = rows.affectedRows > 0;
     } catch (err) {
-        console.log(err);
+        logManager.error(
+            `deleteToken failed: id=${id}, error=${JSON.stringify(err)}`
+        );
     }
 
     return ret;
 }
 
-async function addBurnTx(connection, item) {
+async function addBurnTx(connection, gameId, item, txid, timestamp) {
     let ret = false;
 
     try {
         const query =
             'INSERT INTO tbl_history ' +
-            '(token_id, from_address, to_address, type) VALUE (?, ?, ?, ?)';
+            '(txid, game_id, token_id, from_address, to_address, type, block_timestamp) VALUE (?, ?, ?, ?, ?, ?, ?)';
         const [rows] = await mysqlExecute(connection, query, [
+            txid,
+            gameId,
             item.id,
             item.owner,
             item.owner,
             CONST.TX_TYPE.BUNRT,
+            timestamp,
         ]);
         ret = rows.insertId > 0;
     } catch (err) {
-        console.log(err);
+        logManager.error(
+            `addBurnTx failed: gameId=${gameId}, item=${JSON.stringify(
+                item
+            )}, txid=${txid}, timestamp=${timestamp} ` +
+                `error=${JSON.stringify(err)}`
+        );
     }
 
     return ret;
 }
 
-async function burnToken(contractAddress, tokenID, blockNumber) {
+async function burnToken(
+    contractAddress,
+    tokenID,
+    txid,
+    blockNumber,
+    timestamp
+) {
     let connection = null;
     let ret = false;
 
@@ -569,11 +665,14 @@ async function burnToken(contractAddress, tokenID, blockNumber) {
         const token = await getTokenByContractInfo(contractAddress, tokenID);
         if (token == null) throw new Error('Not exist token.');
 
+        const gameId = await getGameId(connection, tokenID);
+        if (gameId === -1) throw new Error('Not exist gameId');
+
         if (!(await deleteToken(connection, token.id))) {
             throw new Error('Deleting token failed.');
         }
 
-        if (!(await addBurnTx(connection, token))) {
+        if (!(await addBurnTx(connection, gameId, token, txid, timestamp))) {
             throw new Error('Adding burn tx failed.');
         }
 
@@ -592,6 +691,10 @@ async function burnToken(contractAddress, tokenID, blockNumber) {
 
         connection.release();
     } catch (err) {
+        logManager.error(
+            `burnToken failed: contractAddress=${contractAddress}, tokenID=${tokenID}, txid=${txid}, ` +
+                `blockNumber=${blockNumber}, timestamp=${timestamp}`
+        );
         await onConnectionErr(connection, err, true);
     }
 
@@ -623,7 +726,10 @@ async function updateTokenVisible(
             ret = rows.affectedRows > 0;
         }
     } catch (err) {
-        console.log(err);
+        logManager.error(
+            `updateTokenVisible failed: id=${id}, visible=${visible}, arcadedogePrice=${arcadedogePrice}, ` +
+                `error=${JSON.stringify(err)}`
+        );
     }
 
     return ret;
@@ -672,6 +778,10 @@ async function sellToken(
 
         connection.release();
     } catch (err) {
+        logManager.error(
+            `sellToken failed: contractAddress=${contractAddress}, tokenID=${tokenID}, ` +
+                `arcadedogePrice=${arcadedogePrice}, blockNumber=${blockNumber}`
+        );
         await onConnectionErr(connection, err, true);
     }
 
@@ -715,6 +825,9 @@ async function cancelSellToken(contractAddress, tokenID, blockNumber) {
 
         connection.release();
     } catch (err) {
+        logManager.error(
+            `cancelSellToken failed: contractAddress=${contractAddress}, tokenID=${tokenID}, blockNumber=${blockNumber}`
+        );
         await onConnectionErr(connection, err, true);
     }
 
@@ -730,52 +843,88 @@ async function updateTokenOwner(connection, id, owner) {
         const [rows] = await mysqlExecute(connection, query, [owner, id]);
         ret = rows.affectedRows > 0;
     } catch (err) {
-        console.log(err);
+        logManager.error(
+            `updateTokenOwner failed: id=${id}, owner=${owner}, error=${JSON.stringify(
+                err
+            )}`
+        );
     }
 
     return ret;
 }
 
-async function addExchangeTx(connection, id, from, to, assetID, amount) {
+async function addExchangeTx(
+    connection,
+    gameId,
+    id,
+    from,
+    to,
+    assetID,
+    amount,
+    txid,
+    timestamp
+) {
     let ret = false;
 
     try {
         const query =
             'INSERT INTO tbl_history ' +
-            '(token_id, from_address, to_address, asset_id, amount, type) ' +
-            'VALUE(?, ?, ?, ?, ?, ?)';
+            '(txid, game_id, token_id, from_address, to_address, asset_id, token_amount, type, block_timestamp) ' +
+            'VALUE(?, ?, ?, ?, ?, ?, ?, ?, ?)';
         const [rows] = await mysqlExecute(connection, query, [
+            txid,
+            gameId,
             id,
             from,
             to,
             assetID,
             amount,
             CONST.TX_TYPE.EXCHANGE,
+            timestamp,
         ]);
         ret = rows.insertId > 0;
     } catch (err) {
-        console.log(err);
+        logManager.error(
+            `addExchangeTx failed: gameId=${gameId}, id=${id}, from=${from}, to=${to}, assetID=${assetID}, ` +
+                `amount=${amount}, txid=${txid}, timestamp=${timestamp} error=${JSON.stringify(
+                    err
+                )}`
+        );
     }
 
     return ret;
 }
 
-async function addTransferTx(connection, id, from, to) {
+async function addTransferTx(
+    connection,
+    gameId,
+    id,
+    from,
+    to,
+    txid,
+    timestamp
+) {
     let ret = false;
 
     try {
         const query =
             'INSERT INTO tbl_history ' +
-            '(token_id, from_address, to_address, type) VALUE(?, ?, ?, ?)';
+            '(txid, game_id, token_id, from_address, to_address, type, block_timestamp) VALUE(?, ?, ?, ?, ?, ?, ?)';
         const [rows] = await mysqlExecute(connection, query, [
+            txid,
+            gameId,
             id,
             from,
             to,
             CONST.TX_TYPE.EXCHANGE,
+            timestamp,
         ]);
         ret = rows.insertId > 0;
     } catch (err) {
-        console.log(err);
+        logManager.error(
+            `addTransferTx failed: gameId=${gameId}, id=${id}, from=${from}, to=${to}, txid=${txid}, ` +
+                `timestamp=${timestamp} error=${JSON.stringify(err)}`
+        );
     }
 
     return ret;
@@ -790,7 +939,9 @@ async function increaseTradeCnt(connection, id) {
         const [rows] = await mysqlExecute(connection, query, [id]);
         ret = rows.affectedRows > 0;
     } catch (err) {
-        console.log(err);
+        logManager.error(
+            `increaseTradeCnt failed: id=${id}, error=${JSON.stringify(err)}`
+        );
     }
 
     return ret;
@@ -803,7 +954,9 @@ async function exchangeToken(
     assetID,
     amount,
     buyer,
-    blockNumber
+    txid,
+    blockNumber,
+    timestamp
 ) {
     let connection = null;
     let ret = false;
@@ -816,6 +969,9 @@ async function exchangeToken(
         const token = await getTokenByContractInfo(contractAddress, tokenID);
         if (token == null) throw new Error('Not exist token.');
 
+        const gameId = await getGameId(connection, tokenID);
+        if (gameId === -1) throw new Error('Not exist gameId');
+
         if (!(await updateTokenOwner(connection, token.id, buyer))) {
             throw new Error('Updating token owner failed.');
         }
@@ -823,11 +979,14 @@ async function exchangeToken(
         if (
             !(await addExchangeTx(
                 connection,
+                gameId,
                 token.id,
                 owner,
                 buyer,
                 assetID,
-                amount
+                amount,
+                txid,
+                timestamp
             ))
         ) {
             throw new Error('Adding exchange tx failed.');
@@ -851,13 +1010,26 @@ async function exchangeToken(
 
         connection.release();
     } catch (err) {
+        logManager.error(
+            `exchangeToken failed: contractAddress=${contractAddress}, tokenID=${tokenID}, owner=${owner}, ` +
+                `assetID=${assetID}, amount=${amount}, buyer=${buyer}, txid=${txid}, blockNumber=${blockNumber}, ` +
+                `timestamp=${timestamp}`
+        );
         await onConnectionErr(connection, err, true);
     }
 
     return ret;
 }
 
-async function transferToken(contractAddress, tokenID, from, to, blockNumber) {
+async function transferToken(
+    contractAddress,
+    tokenID,
+    from,
+    to,
+    txid,
+    blockNumber,
+    timestamp
+) {
     let connection = null;
     let ret = false;
 
@@ -869,11 +1041,24 @@ async function transferToken(contractAddress, tokenID, from, to, blockNumber) {
         const token = await getTokenByContractInfo(contractAddress, tokenID);
         if (token == null) throw new Error('Not exist token.');
 
+        const gameId = await getGameId(connection, tokenID);
+        if (gameId === -1) throw new Error('Not exist gameId');
+
         if (!(await updateTokenOwner(connection, token.id, to))) {
             throw new Error('Updating token owner failed.');
         }
 
-        if (!(await addTransferTx(connection, token.id, from, to))) {
+        if (
+            !(await addTransferTx(
+                connection,
+                gameId,
+                token.id,
+                from,
+                to,
+                txid,
+                timestamp
+            ))
+        ) {
             throw new Error('Adding transfer tx failed.');
         }
 
@@ -892,6 +1077,10 @@ async function transferToken(contractAddress, tokenID, from, to, blockNumber) {
 
         connection.release();
     } catch (err) {
+        logManager.error(
+            `transferToken failed: contractAddress=${contractAddress}, tokenID=${tokenID}, from=${from}, to=${to}, ` +
+                `txid=${txid}, blockNumber=${blockNumber}, timestamp=${timestamp}`
+        );
         await onConnectionErr(connection, err, true);
     }
 
@@ -917,6 +1106,9 @@ async function updateOtherSyncBlockNumber(contractType, blockNumber) {
 
         connection.release();
     } catch (err) {
+        logManager.error(
+            `updateOtherSyncBlockNumber failed: contractType=${contractType}, blockNumber=${blockNumber}`
+        );
         await onConnectionErr(connection, err, true);
     }
 
@@ -933,7 +1125,8 @@ async function getGames() {
         connection.release();
         return rows;
     } catch (err) {
-        onConnectionErr(connection, err);
+        logManager.error('getGames failed: No parameters');
+        await onConnectionErr(connection, err);
     }
 
     return [];
@@ -949,7 +1142,8 @@ async function getCategories() {
         connection.release();
         return rows;
     } catch (err) {
-        onConnectionErr(connection, err);
+        logManager.error('getCategories failed: No parameters');
+        await onConnectionErr(connection, err);
     }
 
     return [];
@@ -974,7 +1168,10 @@ async function getItemsByAddress(address, sortType, limit, cnt) {
         connection.release();
         return rows;
     } catch (err) {
-        onConnectionErr(connection, err);
+        logManager.error(
+            `getItemsByAddress failed: address=${address}, sortType=${sortType}, limit=${limit}, cnt=${cnt}`
+        );
+        await onConnectionErr(connection, err);
     }
 
     return [];
@@ -992,7 +1189,8 @@ async function getItemsByAddressCnt(address) {
         connection.release();
         return rows[0].total;
     } catch (err) {
-        onConnectionErr(connection, err);
+        logManager.error(`getItemsByAddressCnt failed: address=${address}`);
+        await onConnectionErr(connection, err);
     }
 
     return 0;
@@ -1027,7 +1225,11 @@ async function getMarketItems(game, category, sortType, limit, cnt) {
         connection.release();
         return rows;
     } catch (err) {
-        onConnectionErr(connection, err);
+        logManager.error(
+            `getMarketItems failed: game=${game}, category=${category}, sortType=${sortType}, limit=${limit}, ` +
+                `cnt=${cnt}`
+        );
+        await onConnectionErr(connection, err);
     }
 
     return [];
@@ -1058,7 +1260,10 @@ async function getMarketItemsCnt(game, category) {
         connection.release();
         return rows[0].total;
     } catch (err) {
-        onConnectionErr(connection, err);
+        logManager.error(
+            `getMarketItemsCnt failed: game=${game}, category=${category}`
+        );
+        await onConnectionErr(connection, err);
     }
 
     return 0;
@@ -1083,7 +1288,10 @@ async function insertLikes(discussionID, parentID, user) {
 
         connection.release();
     } catch (err) {
-        onConnectionErr(connection, err);
+        logManager.error(
+            `insertLikes failed: discussionID=${discussionID}, parentID=${parentID}, user=${user}`
+        );
+        await onConnectionErr(connection, err);
     }
 
     return ret;
@@ -1108,7 +1316,10 @@ async function deleteLikes(discussionID, parentID, user) {
 
         connection.release();
     } catch (err) {
-        onConnectionErr(connection, err);
+        logManager.error(
+            `deleteLikes failed: discussionID=${discussionID}, parentID=${parentID}, user=${user}`
+        );
+        await onConnectionErr(connection, err);
     }
 
     return ret;
@@ -1130,7 +1341,10 @@ async function getLikes(discussionID, parentID, user) {
         connection.release();
         return rows;
     } catch (err) {
-        onConnectionErr(connection, err);
+        logManager.error(
+            `getLikes failed: discussionID=${discussionID}, parentID=${parentID}, user=${user}`
+        );
+        await onConnectionErr(connection, err);
     }
 
     return [];
@@ -1151,10 +1365,195 @@ async function getLikesCount(discussionID, parentID) {
         connection.release();
         return rows[0].total;
     } catch (err) {
-        onConnectionErr(connection, err);
+        logManager.error(
+            `getLikesCount failed: discussionID=${discussionID}, parentID=${parentID}`
+        );
+        await onConnectionErr(connection, err);
     }
 
     return 0;
+}
+
+async function getTxs(gameId, index, count) {
+    let connection = null;
+
+    try {
+        connection = await connect();
+
+        const query =
+            'SELECT id, from_address, to_address, type as tx_type, token_id, gamepoint_amount as amount, ' +
+            'block_timestamp ' +
+            'FROM tbl_history ' +
+            'WHERE game_id = ? AND id > ? ORDER BY id LIMIT 0, ?';
+
+        const [rows] = await mysqlExecute(connection, query, [
+            gameId,
+            index,
+            count,
+        ]);
+
+        connection.release();
+        return rows;
+    } catch (err) {
+        logManager.error(
+            `getTxs failed: gameId=${gameId}, index=${index}, count=${count}`
+        );
+        onConnectionErr(connection, err, false);
+    }
+    return null;
+}
+
+async function addSwapTx(
+    connection,
+    id,
+    address,
+    tokenAmount,
+    gamePointAmount,
+    type,
+    txid,
+    timestamp
+) {
+    let ret = false;
+
+    try {
+        const query =
+            'INSERT INTO tbl_history ' +
+            '(txid, game_id, from_address, to_address, token_amount, gamepoint_amount, type, block_timestamp) ' +
+            'VALUE(?, ?, ?, ?, ?, ?, ?, ?)';
+        const [rows] = await mysqlExecute(connection, query, [
+            txid,
+            id,
+            address,
+            address,
+            tokenAmount,
+            gamePointAmount,
+            type,
+            timestamp,
+        ]);
+        ret = rows.insertId > 0;
+    } catch (err) {
+        logManager.error(
+            `addSwapTx failed: id=${id}, address=${address}, tokenAmount=${tokenAmount}, ` +
+                `gamePointAmount=${gamePointAmount}, type=${type}, txid=${txid}, timestamp=${timestamp}, ` +
+                `error=${JSON.stringify(err)}`
+        );
+    }
+
+    return ret;
+}
+
+async function buyGamePoint(
+    id,
+    address,
+    tokenAmount,
+    gamePointAmount,
+    txid,
+    timestamp,
+    blockNumber
+) {
+    let ret = false;
+    let connection = null;
+
+    try {
+        connection = await connect();
+
+        await startTransactions(connection);
+
+        if (
+            !(await addSwapTx(
+                connection,
+                id,
+                address,
+                tokenAmount,
+                gamePointAmount,
+                CONST.SWAP_TYPE.DEPOSIT,
+                txid,
+                timestamp
+            ))
+        ) {
+            throw new Error('Adding buy request failed!');
+        }
+
+        if (
+            !(await updateSyncBlockNumber(
+                connection,
+                CONST.CONTRACT_TYPE.SWAP,
+                blockNumber
+            ))
+        ) {
+            throw new Error('Updating sync block number failed.');
+        }
+
+        await commitTransaction(connection);
+        ret = true;
+
+        connection.release();
+    } catch (err) {
+        logManager.error(
+            `buyGamePoint failed: id=${id}, address=${address}, tokenAmount=${tokenAmount}, ` +
+                `gamePointAmount=${gamePointAmount}, txid=${txid}, timestamp=${timestamp}, blockNumber=${blockNumber}`
+        );
+        await onConnectionErr(connection, err, true);
+    }
+
+    return ret;
+}
+
+async function sellGamePoint(
+    id,
+    address,
+    tokenAmount,
+    gamePointAmount,
+    txid,
+    timestamp,
+    blockNumber
+) {
+    let ret = false;
+    let connection = null;
+
+    try {
+        connection = await connect();
+
+        await startTransactions(connection);
+
+        if (
+            !(await addSwapTx(
+                connection,
+                id,
+                address,
+                tokenAmount,
+                gamePointAmount,
+                CONST.SWAP_TYPE.WITHDRAW,
+                txid,
+                timestamp
+            ))
+        ) {
+            throw new Error('Adding buy request failed!');
+        }
+
+        if (
+            !(await updateSyncBlockNumber(
+                connection,
+                CONST.CONTRACT_TYPE.SWAP,
+                blockNumber
+            ))
+        ) {
+            throw new Error('Updating sync block number failed.');
+        }
+
+        await commitTransaction(connection);
+        ret = true;
+
+        connection.release();
+    } catch (err) {
+        logManager.error(
+            `sellGamePoint failed: id=${id}, address=${address}, tokenAmount=${tokenAmount}, ` +
+                `gamePointAmount=${gamePointAmount}, txid=${txid}, timestamp=${timestamp}, blockNumber=${blockNumber}`
+        );
+        await onConnectionErr(connection, err, true);
+    }
+
+    return ret;
 }
 
 module.exports = {
@@ -1189,4 +1588,7 @@ module.exports = {
     getLikesCount,
     getDiscussionCnt,
     getCommentByID,
+    getTxs,
+    buyGamePoint,
+    sellGamePoint,
 };

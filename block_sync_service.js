@@ -7,12 +7,13 @@ const databaseManager = require('./manager/database_manager');
 const erc721ABI = require('./contracts/ERC721.json');
 const exchangeABI = require('./contracts/EXCHANGE.json');
 const CONST = require('./common/constants');
+const logManager = require('./manager/log_manager');
 
 erc721Decoder.addABI(erc721ABI);
 exchangeDecoder.addABI(exchangeABI);
 
 async function syncNFTBlocks() {
-    console.log('Sycnronizing NFT blocks');
+    logManager.info('Sycnronizing NFT blocks');
 
     const blockNumber = await databaseManager.getSyncBlockNumber(
         CONST.CONTRACT_TYPE.NFT
@@ -26,7 +27,7 @@ async function syncNFTBlocks() {
     try {
         historyData = await axios.get(historyURL);
     } catch (err) {
-        console.log(err);
+        logManager.error(err);
         return;
     }
 
@@ -81,7 +82,9 @@ async function syncNFTBlocks() {
                     if (
                         !(await databaseManager.mintToken(
                             token,
-                            transaction.blockNumber
+                            transaction.hash,
+                            transaction.blockNumber,
+                            transaction.timeStamp
                         ))
                     ) {
                         result = false;
@@ -92,7 +95,9 @@ async function syncNFTBlocks() {
                         !(await databaseManager.burnToken(
                             config.contractNFT,
                             decodedData.params[0].value,
-                            transaction.blockNumber
+                            transaction.hash,
+                            transaction.blockNumber,
+                            transaction.timeStamp
                         ))
                     ) {
                         result = false;
@@ -110,7 +115,9 @@ async function syncNFTBlocks() {
                             Web3.utils.toChecksumAddress(
                                 decodedData.params[1].value
                             ),
-                            transaction.blockNumber
+                            transaction.hash,
+                            transaction.blockNumber,
+                            transaction.timeStamp
                         ))
                     ) {
                         result = false;
@@ -135,14 +142,14 @@ async function syncNFTBlocks() {
             }
         }
     } catch (err) {
-        console.log(err);
+        logManager.error(err);
     }
 
-    console.log('Synchronizing NFT blocks completed.');
+    logManager.info('Synchronizing NFT blocks completed.');
 }
 
 async function syncExchangeBlocks() {
-    console.log('Sycnronizing Exchange blocks.');
+    logManager.info('Sycnronizing Exchange blocks.');
 
     const blockNumber = await databaseManager.getSyncBlockNumber(
         CONST.CONTRACT_TYPE.EXCHANGE
@@ -159,7 +166,7 @@ async function syncExchangeBlocks() {
     try {
         historyData = await axios.get(historyURL);
     } catch (err) {
-        console.log(err);
+        logManager.error(err);
         return;
     }
 
@@ -232,7 +239,9 @@ async function syncExchangeBlocks() {
                             Web3.utils.toChecksumAddress(
                                 decodedData.params[4].value
                             ),
-                            transaction.blockNumber
+                            transaction.hash,
+                            transaction.blockNumber,
+                            transaction.timeStamp
                         ))
                     ) {
                         result = false;
@@ -254,7 +263,9 @@ async function syncExchangeBlocks() {
                             Web3.utils.toChecksumAddress(
                                 decodedData.params[4].value
                             ),
-                            transaction.blockNumber
+                            transaction.hash,
+                            transaction.blockNumber,
+                            transaction.timeStamp
                         ))
                     ) {
                         result = false;
@@ -279,15 +290,125 @@ async function syncExchangeBlocks() {
             }
         }
     } catch (err) {
-        console.log(err);
+        logManager.error(err);
     }
 
-    console.log('Sycnronizing Exchange blocks completed.');
+    logManager.info('Sycnronizing Exchange blocks completed.');
+}
+
+async function syncSwapBlocks() {
+    logManager.info('Sycnronizing Swap blocks');
+
+    const blockNumber = await databaseManager.getSyncBlockNumber(
+        CONST.CONTRACT_TYPE.SWAP
+    );
+
+    let { eventURL } = config;
+    eventURL = eventURL.replace('CONTRACT_ADDRESS', config.contractSwap);
+    eventURL = eventURL.replace('START_BLOCK', `${blockNumber + 1}`);
+
+    let eventData = null;
+    try {
+        eventData = await axios.get(eventURL);
+    } catch (err) {
+        logManager.error(err);
+        return;
+    }
+
+    if (eventData.data.status !== '1') {
+        logManager.info('Synchronizing Swap blocks completed.');
+        return;
+    }
+
+    const events = eventData.data.result;
+
+    try {
+        for (let j = 0; j < events.length; j++) {
+            const event = events[j];
+
+            const web3 = new Web3(config.bscProviderUrl);
+
+            const tx = await web3.eth.getTransaction(event.transactionHash);
+            const address = Web3.utils.toChecksumAddress(tx.from);
+
+            let result = true;
+
+            let id = 0;
+            let tokenAmount = 0;
+            let gamePointAmount = 0;
+            switch (event.topics[0]) {
+                case CONST.SWAP_EVENT_TYPE.BUY_GAME_POINT:
+                    id = parseInt(event.topics[1], 16);
+                    tokenAmount = Web3.utils.fromWei(
+                        /* eslint-disable-next-line */
+                        `${BigInt(event.topics[2]).toString(10)}`,
+                        'ether'
+                    );
+                    gamePointAmount = parseInt(event.topics[3], 16);
+
+                    result = await databaseManager.buyGamePoint(
+                        id,
+                        Web3.utils.toChecksumAddress(address),
+                        tokenAmount,
+                        gamePointAmount,
+                        event.transactionHash,
+                        /* eslint-disable-next-line */
+                        BigInt(event.timeStamp),
+                        /* eslint-disable-next-line */
+                        BigInt(event.blockNumber)
+                    );
+                    break;
+                case CONST.SWAP_EVENT_TYPE.SELL_GAME_POINT:
+                    id = parseInt(event.topics[1], 16);
+                    tokenAmount = Web3.utils.fromWei(
+                        /* eslint-disable-next-line */
+                        `${BigInt(event.topics[2]).toString(10)}`,
+                        'ether'
+                    );
+                    gamePointAmount = parseInt(event.topics[3], 16);
+
+                    result = await databaseManager.sellGamePoint(
+                        id,
+                        Web3.utils.toChecksumAddress(address),
+                        tokenAmount,
+                        gamePointAmount,
+                        event.transactionHash,
+                        /* eslint-disable-next-line */
+                        BigInt(event.timeStamp),
+                        /* eslint-disable-next-line */
+                        BigInt(event.blockNumber)
+                    );
+                    break;
+                default:
+                    if (
+                        !(await databaseManager.updateOtherSyncBlockNumber(
+                            CONST.CONTRACT_TYPE.SWAP,
+                            /* eslint-disable-next-line */
+                            BigInt(event.blockNumber)
+                        ))
+                    ) {
+                        result = false;
+                    }
+                    break;
+            }
+
+            if (result === false) {
+                throw new Error(
+                    `Synchronizing failed. TxHash: ${event.transactionHash}`
+                );
+            }
+        }
+    } catch (err) {
+        logManager.error(err);
+    }
+
+    logManager.info('Synchronizing Swap blocks completed.');
 }
 
 async function syncBlocks() {
     await syncNFTBlocks();
     await syncExchangeBlocks();
+    await syncSwapBlocks();
 
     setTimeout(() => {
         syncBlocks();
