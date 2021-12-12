@@ -1381,7 +1381,7 @@ async function getTxs(gameId, index, count) {
         connection = await connect();
 
         const query =
-            'SELECT id, from_address, to_address, type as tx_type, token_id, gamepoint_amount as amount, ' +
+            'SELECT id, txid, from_address, to_address, type as tx_type, token_id, gamepoint_amount as amount, ' +
             'block_timestamp ' +
             'FROM tbl_history ' +
             'WHERE game_id = ? AND id > ? ORDER BY id LIMIT 0, ?';
