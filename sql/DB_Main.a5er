@@ -1,0 +1,443 @@
+﻿# A5:ER FORMAT:11
+# A5:ER ENCODING:UTF8
+# A5:ER Mk-1 Copyright (C)2007 m.matsubara
+# A5:SQL Mk-2 Copyright (C)1997 m.matsubara
+#  http://www.wind.sannet.ne.jp/m_matsu/developer/a5m2/
+
+[Manager]
+ProjectName=Arcade
+Author=Alex.R
+MaxEntityRowShow=1000
+ReadOnlyRecommend=0
+Page=MainDB
+PageInfo="MainDB",2,"A3Landscape",$FFFFFF
+LogicalView=1
+DecodeDomain=0
+ViewModePageIndividually=1
+ViewMode=2
+ViewFormat=0
+UseNondependenceDashLine=0
+FontName=Tahoma
+FontSize=10
+PaperSize=A4Landscape
+HeaderLeft=
+HeaderCenter=
+HeaderRight=
+FooterLeft=
+FooterCenter=
+FooterRight=
+ShowPageoutRelation=1
+RDBMSTypeName=Oracle Database
+DefaultPkName=%0:s_PKC
+DefaultPkIndexName=%0:s_PKI
+DefaultIndexName=%0:s_IX%1:d
+DefaultFkName=%0:s_FK%1:d
+SqlSeparator=0
+ShowTag=1
+ShowCommonAttributes=0
+
+[Entity]
+PName=tbl_status
+LName=Status
+Comment=
+TableOption=
+Page=MainDB
+Left=1850
+Top=1350
+Field="ID","id","@INT","NOT NULL",0,"","",$FFFFFFFF,""
+Field="Contract Type","contract_type","@INT","NOT NULL",,"1","1: NFT, 2: Exchange, 3: Swap",$FFFFFFFF,""
+Field="Block Number","block_number","@INT","NOT NULL",,"0","",$FFFFFFFF,""
+Field="Created At","created_at","@DATE","NOT NULL",,"","",$FFFFFFFF,""
+Field="Updated At","updated_at","@DATE","NOT NULL",,"","",$FFFFFFFF,""
+EffectMode=Gradation
+Color=$000000
+BkColor=$8FC5ED
+ModifiedDateTime=20211221155132
+Position="MainDB",1850,1350,308,336
+
+[Relation]
+Entity1=tbl_item
+Entity2=tbl_history
+RelationType1=2
+RelationType2=3
+Fields1=id
+Fields2=token_id
+Cardinarity1=
+Cardinarity2=
+Position="MAINDB",0,415,5470,2129,R,R
+Dependence=0
+Caption=
+PName=
+ModifiedDateTime=20211221154847
+LineMode=0
+Bar1=42
+Bar2=547
+Bar3=213
+TermPos1=R
+TermPos2=R
+
+[Relation]
+Entity1=tbl_game
+Entity2=tbl_history
+RelationType1=2
+RelationType2=3
+Fields1=id
+Fields2=game_id
+Cardinarity1=
+Cardinarity2=
+Position="MAINDB",0,3779,6221,2231,R,R
+Dependence=0
+Caption=
+PName=
+ModifiedDateTime=20211221154834
+LineMode=0
+Bar1=378
+Bar2=622
+Bar3=223
+TermPos1=R
+TermPos2=R
+
+[Entity]
+PName=tbl_history
+LName=History
+Comment=
+TableOption=
+Page=MainDB
+Left=250
+Top=1450
+Field="ID","id","@INT","NOT NULL",0,"","",$FFFFFFFF,""
+Field="TX ID","tx_id","@VARCHAR(128)","NOT NULL",,"","",$FFFFFFFF,""
+Field="Game ID","game_id","@INT","NOT NULL",,"","",$FFFFFFFF,""
+Field="Token ID","token_id","@INT","NOT NULL",,"","",$FFFFFFFF,""
+Field="From Address","from_address","@VARCHAR(128)","NOT NULL",,"","",$FFFFFFFF,""
+Field="To Address","to_address","@VARCHAR(128)","NOT NULL",,"","",$FFFFFFFF,""
+Field="Asset ID","asset_id","@VARCHAR(128)",,,"","",$FFFFFFFF,""
+Field="Token Amount","token_amount","@VARCHAR(32)",,,"","",$FFFFFFFF,""
+Field="Game Point Amount","gamepoint_amount","@INT",,,"","",$FFFFFFFF,""
+Field="History Type","type","@INT","NOT NULL",,"0","0: None, 1: Mint, 2: Exchange, 3: Burn, 4: Transfer, 5: Deposit(token->game point), 6: Withdraw(game point -> token)",$FFFFFFFF,""
+Field="Block Timestamp","block_timestamp","@DECIMAL(10,0)","NOT NULL",,"","",$FFFFFFFF,""
+Field="Created At","created_at","@DATE","NOT NULL",,"","",$FFFFFFFF,""
+Field="Updated At","updated_at","@DATE","NOT NULL",,"","",$FFFFFFFF,""
+EffectMode=Gradation
+Color=$000000
+BkColor=$DEB2C7
+ModifiedDateTime=20211221154710
+Position="MainDB",250,1450,393,717
+
+[Relation]
+Entity1=tbl_category
+Entity2=tbl_item
+RelationType1=2
+RelationType2=3
+Fields1=id
+Fields2=category_id
+Cardinarity1=
+Cardinarity2=
+Position="MAINDB",0,9141,8423,5868,R,R
+Dependence=0
+Caption=
+PName=
+ModifiedDateTime=20211221154040
+LineMode=0
+Bar1=914
+Bar2=842
+Bar3=587
+TermPos1=R
+TermPos2=R
+
+[Relation]
+Entity1=tbl_game
+Entity2=tbl_item
+RelationType1=2
+RelationType2=3
+Fields1=id
+Fields2=game_id
+Cardinarity1=
+Cardinarity2=
+Position="MAINDB",0,7080,8423,3507,R,R
+Dependence=0
+Caption=
+PName=
+ModifiedDateTime=20211221154029
+LineMode=0
+Bar1=708
+Bar2=842
+Bar3=351
+TermPos1=R
+TermPos2=R
+
+[Entity]
+PName=tbl_item
+LName=Item
+Comment=
+TableOption=
+Page=MainDB
+Left=950
+Top=1350
+Field="ID","id","@INT","NOT NULL",0,"","",$FFFFFFFF,""
+Field="Game ID","game_id","@INT","NOT NULL",,"","",$FFFFFFFF,""
+Field="Category ID","category_id","@INT","NOT NULL",,"","",$FFFFFFFF,""
+Field="Contract Address","contract_address","@VARCHAR(128)","NOT NULL",,"","",$FFFFFFFF,""
+Field="Token ID","token_id","@DECIMAL(13,0)","NOT NULL",,"","",$FFFFFFFF,""
+Field="Token Name","name","@VARCHAR(255)","NOT NULL",,"","",$FFFFFFFF,""
+Field="Token Discription","description","@TEXT","NOT NULL",,"","",$FFFFFFFF,""
+Field="Attachment URL","attach_url","@VARCHAR(255)","NOT NULL",,"","",$FFFFFFFF,""
+Field="Owner Address","owner","@VARCHAR(128)","NOT NULL",,"","",$FFFFFFFF,""
+Field="Is Anonymous","is_anonymous","@INT(1)","NOT NULL",,"0","0: Normal, 1: Anonymous",$FFFFFFFF,""
+Field="Arcade Price","arcadedoge_price","@DOUBLE","NOT NULL",,"","",$FFFFFFFF,""
+Field="Is Visible","is_visible","@INT(1)","NOT NULL",,"0","0: Invisible, 1: Visible",$FFFFFFFF,""
+Field="Is Burnt","is_burnt","@INT(1)","NOT NULL",,"0","0: Available, 1: Burnt",$FFFFFFFF,""
+Field="Trade Count","trade_cnt","@INT","NOT NULL",,"0","",$FFFFFFFF,""
+Field="Created At","created_at","@DATE","NOT NULL",,"","",$FFFFFFFF,""
+Field="Updated At","updated_at","@DATE","NOT NULL",,"","",$FFFFFFFF,""
+EffectMode=Gradation
+Color=$000000
+BkColor=$DEB2C7
+ModifiedDateTime=20211221154009
+Position="MainDB",950,1350,432,768
+
+[Relation]
+Entity1=tbl_comment
+Entity2=tbl_likes
+RelationType1=2
+RelationType2=3
+Fields1=id
+Fields2=parent_id
+Cardinarity1=
+Cardinarity2=
+Position="MAINDB",0,4670,5330,5182,R,R
+Dependence=0
+Caption=
+PName=
+ModifiedDateTime=20211221153217
+LineMode=0
+Bar1=467
+Bar2=533
+Bar3=518
+TermPos1=R
+TermPos2=R
+
+[Relation]
+Entity1=tbl_discussion
+Entity2=tbl_likes
+RelationType1=2
+RelationType2=3
+Fields1=id
+Fields2=discussion_id
+Cardinarity1=
+Cardinarity2=
+Position="MAINDB",0,4670,5330,3734,R,R
+Dependence=0
+Caption=
+PName=
+ModifiedDateTime=20211221153157
+LineMode=0
+Bar1=467
+Bar2=533
+Bar3=373
+TermPos1=R
+TermPos2=R
+
+[Entity]
+PName=tbl_likes
+LName=Likes
+Comment=
+TableOption=
+Page=MainDB
+Left=2500
+Top=900
+Field="ID","id","@INT","NOT NULL",0,"","",$FFFFFFFF,""
+Field="Discussion ID","discussion_id","@INT","NOT NULL",,"","",$FFFFFFFF,""
+Field="Parent Comment ID","parent_id","@INT","NOT NULL",,"","",$FFFFFFFF,""
+Field="User Name","user","@VARCHAR(255)","NOT NULL",,"","",$FFFFFFFF,""
+Field="User Type","user_type","@INT(1)","NOT NULL",,"","0: Normal, 1: Anonymous",$FFFFFFFF,""
+Field="Created At","created_at","DATE","NOT NULL",,"","",$FFFFFFFF,""
+EffectMode=Gradation
+Color=$000000
+BkColor=$26FBCB
+ModifiedDateTime=20211221153134
+Position="MainDB",2500,900,423,532
+
+[Relation]
+Entity1=tbl_comment
+Entity2=tbl_comment
+RelationType1=1
+RelationType2=3
+Fields1=id
+Fields2=parent_id
+Cardinarity1=
+Cardinarity2=
+Position="MAINDB",0,777,7258,2761,R,R
+Dependence=0
+Caption=
+PName=
+ModifiedDateTime=20211221152424
+LineMode=0
+Bar1=78
+Bar2=726
+Bar3=276
+TermPos1=R
+TermPos2=R
+
+[Relation]
+Entity1=tbl_discussion
+Entity2=tbl_comment
+RelationType1=2
+RelationType2=3
+Fields1=id
+Fields2=discussion_id
+Cardinarity1=
+Cardinarity2=
+Position="MAINDB",0,1228,8772,1199,R,R
+Dependence=0
+Caption=
+PName=
+ModifiedDateTime=20211221152409
+LineMode=0
+Bar1=123
+Bar2=877
+Bar3=120
+TermPos1=R
+TermPos2=R
+
+[Entity]
+PName=tbl_comment
+LName=Comment
+Comment=
+TableOption=
+Page=MainDB
+Left=2800
+Top=300
+Field="ID","id","@INT","NOT NULL",0,"","",$FFFFFFFF,""
+Field="Discussion ID","discussion_id","@INT","NOT NULL",,"","",$FFFFFFFF,""
+Field="Parent Comment ID","parent_id","@INT",,,"","",$FFFFFFFF,""
+Field="Content","content","TEXT","NOT NULL",,"","",$FFFFFFFF,""
+Field="User Name","user","@VARCHAR(255)","NOT NULL",,"","",$FFFFFFFF,""
+Field="User Type","user_type","@INT(1)","NOT NULL",,"","0: Normal, 1: Anonymous",$FFFFFFFF,""
+Field="Likes Count","likes","@INT","NOT NULL",,"0","",$FFFFFFFF,""
+Field="Created At","created_at","DATE","NOT NULL",,"","",$FFFFFFFF,""
+Field="Updated At","updated_at","DATE","NOT NULL",,"","",$FFFFFFFF,""
+EffectMode=Gradation
+Color=$000000
+BkColor=$26FBCB
+ModifiedDateTime=20211221152358
+Position="MainDB",2800,300
+
+[Relation]
+Entity1=tbl_stuff
+Entity2=tbl_discussion
+RelationType1=2
+RelationType2=3
+Fields1=id
+Fields2=stuff_id
+Cardinarity1=
+Cardinarity2=
+Position="MAINDB",0,1217,8783,1168,R,R
+Dependence=0
+Caption=
+PName=
+ModifiedDateTime=20211221152104
+LineMode=0
+Bar1=122
+Bar2=878
+Bar3=117
+TermPos1=R
+TermPos2=R
+
+[Entity]
+PName=tbl_discussion
+LName=Discussion
+Comment=
+TableOption=
+Page=MainDB
+Left=2250
+Top=300
+Field="ID","id","@INT","NOT NULL",0,"","",$FFFFFFFF,""
+Field="Stuff ID","stuff_id","@INT","NOT NULL",,"","",$FFFFFFFF,""
+Field="Content","content","TEXT","NOT NULL",,"","",$FFFFFFFF,""
+Field="User Name","user","@VARCHAR(255)","NOT NULL",,"","",$FFFFFFFF,""
+Field="User Type","user_type","@INT(1)","NOT NULL",,"","0: Normal, 1: Anonymous",$FFFFFFFF,""
+Field="Likes Count","likes","@INT","NOT NULL",,"0","",$FFFFFFFF,""
+Field="Created At","created_at","DATE","NOT NULL",,"","",$FFFFFFFF,""
+Field="Updated At","updated_at","DATE","NOT NULL",,"","",$FFFFFFFF,""
+EffectMode=Gradation
+Color=$000000
+BkColor=$26FBCB
+ModifiedDateTime=20211221152049
+Position="MainDB",2250,300,321,372
+
+[Entity]
+PName=tbl_stuff
+LName=Stuff
+Comment=
+TableOption=
+Page=MainDB
+Left=1700
+Top=300
+Field="ID","id","@INT","NOT NULL",0,"","",$FFFFFFFF,""
+Field="Title","title","@VARCHAR(1024)","NOT NULL",,"","",$FFFFFFFF,""
+Field="Created At","created_at","DATE","NOT NULL",,"","",$FFFFFFFF,""
+Field="Updated At","updated_at","DATE","NOT NULL",,"","",$FFFFFFFF,""
+EffectMode=Gradation
+Color=$000000
+BkColor=$26FBCB
+ModifiedDateTime=20211221151619
+Position="MainDB",1700,300,257,357
+
+[Relation]
+Entity1=tbl_game
+Entity2=tbl_category
+RelationType1=2
+RelationType2=3
+Fields1=id
+Fields2=game_id
+Cardinarity1=
+Cardinarity2=
+Position="MAINDB",0,1191,8809,1201,R,R
+Dependence=0
+Caption=
+PName=
+ModifiedDateTime=20211221151257
+LineMode=0
+Bar1=119
+Bar2=881
+Bar3=120
+TermPos1=R
+TermPos2=R
+
+[Entity]
+PName=tbl_game
+LName=Game
+Comment=
+TableOption=
+Page=MainDB
+Left=250
+Top=300
+Field="ID","id","@INT","NOT NULL",0,"","",$FFFFFFFF,""
+Field="Game Name","name","@VARCHAR(32)","NOT NULL",,"","",$FFFFFFFF,""
+Field="Created At","created_at","DATE","NOT NULL",,"","",$FFFFFFFF,""
+Field="Updated At","updated_at","DATE","NOT NULL",,"","",$FFFFFFFF,""
+EffectMode=Gradation
+Color=$000000
+BkColor=$F0CAA6
+ModifiedDateTime=20211221151128
+Position="MainDB",250,300,232,354
+
+[Entity]
+PName=tbl_category
+LName=Category
+Comment=
+TableOption=
+Page=MainDB
+Left=900
+Top=300
+Field="ID","id","@INT","NOT NULL",0,"","",$FFFFFFFF,""
+Field="Game ID","game_id","@INT","NOT NULL",,"","",$FFFFFFFF,""
+Field="Category Name","name","@VARCHAR(32)","NOT NULL",,"","",$FFFFFFFF,""
+Field="Created At","created_at","DATE","NOT NULL",,"","",$FFFFFFFF,""
+Field="Updated At","updated_at","DATE","NOT NULL",,"","",$FFFFFFFF,""
+EffectMode=Gradation
+Color=$000000
+BkColor=$F0CAA6
+ModifiedDateTime=20211221151145
+Position="MainDB",900,300,332,351
